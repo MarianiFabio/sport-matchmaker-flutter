@@ -20,7 +20,7 @@ class SportMatchmakerApp extends StatelessWidget {
           secondary: Colors.amber[700]!,
         ),
         useMaterial3: true,
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
