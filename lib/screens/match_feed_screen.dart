@@ -5,6 +5,7 @@ import 'match_detail_screen.dart';
 class MatchFeedScreen extends StatelessWidget {
   const MatchFeedScreen({super.key});
 
+  // dati mockati buttati qua cosi domani funziona tutto senza db
   final List<MatchItem> dummyMatches = const [
     MatchItem(
       sport: 'Football 5v5',
@@ -53,6 +54,7 @@ class MatchFeedScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
+              // filtri finti, per ora fanno solo scena all'esame
               children: [
                 FilterChip(label: const Text('All Sports'), selected: true, onSelected: (_) {}),
                 const SizedBox(width: 8),
@@ -75,6 +77,7 @@ class MatchFeedScreen extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
+                      // apre la pagina del dettaglio della singola partita
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -106,6 +109,7 @@ class MatchFeedScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
+                                  // un po' di colore per farlo saltare all'occhio
                                   color: Colors.amber[100],
                                   borderRadius: BorderRadius.circular(8),
                                 ),

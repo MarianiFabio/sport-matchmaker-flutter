@@ -23,6 +23,7 @@ class ProfileScreen extends StatelessWidget {
             const Text('Fabio Mariani', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             Text('Amateur Football & Padel Enthusiast', style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 20),
+            // un po' di stat finte per far sembrare il profilo piu figo
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -33,6 +34,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Divider(),
+            // voci di menu per far vedere che l'app e' "completa"
             ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Match History'),

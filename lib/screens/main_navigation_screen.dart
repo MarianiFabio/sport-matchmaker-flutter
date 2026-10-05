@@ -13,6 +13,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
+  // elenco delle pagine da far girare con la bottom bar
   final List<Widget> _pages = const [
     MatchFeedScreen(),
     CreateMatchScreen(),
@@ -25,6 +26,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: _pages[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
+        // qui gestisco quale tab l'utente ha tappato
         onDestinationSelected: (int index) {
           setState(() {
             _currentIndex = index;

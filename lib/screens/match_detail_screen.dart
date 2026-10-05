@@ -34,6 +34,8 @@ class MatchDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text('Confirmed Roster', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
+            // lista giocatori
+            // per domani metto giusto 3 elementi fissi per far vedere come viene
             Card(
               child: ListView(
                 shrinkWrap: true,
@@ -68,6 +70,7 @@ class MatchDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('Join This Game', style: TextStyle(fontSize: 16)),
                 onPressed: () {
+                  // finto popup per dare feedback all'utente (al prof)
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Request sent to organizer!')),
                   );

@@ -13,6 +13,7 @@ class CreateMatchScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // tendina per scegliere lo sport
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Select Sport', border: OutlineInputBorder()),
               value: 'Football 5v5',
@@ -83,6 +84,7 @@ class CreateMatchScreen extends StatelessWidget {
               height: 48,
               child: FilledButton(
                 onPressed: () {
+                  // finto invio del form
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Match published to the feed!')),
                   );

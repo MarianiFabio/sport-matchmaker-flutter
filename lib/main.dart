@@ -12,7 +12,9 @@ class SportMatchmakerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sport Matchmaker',
+      // via la fastidiosa scritta debug in alto a destra
       debugShowCheckedModeBanner: false,
+      // un tema semplice usando teal e amber che stan sempre bene insieme
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.teal,

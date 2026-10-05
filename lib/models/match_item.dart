@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// classe per i dati delle partite, niente roba complessa
+// cosi mi basta passare sto oggetto tra le varie view
 class MatchItem {
   final String sport;
   final String title;
