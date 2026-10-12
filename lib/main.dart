@@ -14,7 +14,7 @@ class SportMatchmakerApp extends StatelessWidget {
       title: 'Sport Matchmaker',
       // via la fastidiosa scritta debug in alto a destra
       debugShowCheckedModeBanner: false,
-      // un tema semplice usando teal e amber che stan sempre bene insieme
+      // un tema semplice usando teal e amber
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.teal,

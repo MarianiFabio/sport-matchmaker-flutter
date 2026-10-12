@@ -48,3 +48,5 @@ app.*.map.json
 .widget_preview/
 pubspec.lock
 pubspec.yaml
+pubspec.lock
+pubspec.yaml
