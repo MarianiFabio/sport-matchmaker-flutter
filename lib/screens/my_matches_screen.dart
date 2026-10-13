@@ -9,11 +9,11 @@ class MyMatchesScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Le mie Partite'),
+          title: const Text('My Matches'),
           bottom: const TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.check_circle_outline), text: 'Iscritto (2)'),
-              Tab(icon: Icon(Icons.sports), text: 'Organizzate (1)'),
+              Tab(icon: Icon(Icons.check_circle_outline), text: 'Joined (2)'),
+              Tab(icon: Icon(Icons.sports), text: 'Organized (1)'),
             ],
           ),
         ),
@@ -24,19 +24,19 @@ class MyMatchesScreen extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               children: [
                 _buildMatchCard(
-                  title: 'Calcio a 5 serale',
-                  sport: 'Calcio',
-                  date: 'Domani, 20:30',
-                  location: 'Centro Sportivo San Siro',
-                  status: 'Posto Confermato',
+                  title: 'Evening 5-a-side Football',
+                  sport: 'Football',
+                  date: 'Tomorrow, 20:30',
+                  location: 'San Siro Sports Center',
+                  status: 'Spot Confirmed',
                   statusColor: Colors.green,
                 ),
                 _buildMatchCard(
-                  title: 'Padel Doppio Livello Medio',
+                  title: 'Mid-Level Doubles Padel',
                   sport: 'Padel',
-                  date: 'Sabato, 18:00',
+                  date: 'Saturday, 18:00',
                   location: 'Padel Club Arena',
-                  status: 'In attesa di altri giocatori',
+                  status: 'Waiting for players',
                   statusColor: Colors.orange,
                 ),
               ],
@@ -46,11 +46,11 @@ class MyMatchesScreen extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               children: [
                 _buildMatchCard(
-                  title: 'Basket 3v3 Playground',
-                  sport: 'Basket',
-                  date: 'Domenica, 17:00',
-                  location: 'Playground Parco Nord',
-                  status: 'Sei tu l\'organizzatore',
+                  title: '3v3 Playground Basketball',
+                  sport: 'Basketball',
+                  date: 'Sunday, 17:00',
+                  location: 'North Park Playground',
+                  status: 'You are the organizer',
                   statusColor: Colors.teal,
                   isHost: true,
                 ),
@@ -131,7 +131,7 @@ class MyMatchesScreen extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Modifica'),
+                    label: const Text('Edit'),
                   ),
                 ],
               ),

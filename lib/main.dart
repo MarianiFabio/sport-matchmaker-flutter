@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const SportMatchmakerApp());
@@ -27,7 +27,7 @@ class SportMatchmakerApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
-      home: const MainNavigationScreen(),
+      home: const LoginScreen(),
     );
   }
 }

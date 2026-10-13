@@ -14,7 +14,7 @@ class ProfileScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Modifica Profilo',
+            tooltip: 'Edit Profile',
             onPressed: () {
               Navigator.push(
                 context,
@@ -24,7 +24,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Impostazioni',
+            tooltip: 'Settings',
             onPressed: () {
               Navigator.push(
                 context,
@@ -56,7 +56,7 @@ class ProfileScreen extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.edit, size: 18),
-              label: const Text('Modifica Profilo'),
+              label: const Text('Edit Profile'),
             ),
             const SizedBox(height: 20),
             // un po' di stat finte per far sembrare il profilo piu figo
@@ -73,8 +73,8 @@ class ProfileScreen extends StatelessWidget {
             // voci di menu per la navigazione
             ListTile(
               leading: const Icon(Icons.sports_soccer),
-              title: const Text('Le mie Partite'),
-              subtitle: const Text('Partite a cui partecipi o organizzate'),
+              title: const Text('My Matches'),
+              subtitle: const Text('Matches you joined or organized'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.push(
@@ -85,7 +85,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('Modifica Profilo'),
+              title: const Text('Edit Profile'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.push(

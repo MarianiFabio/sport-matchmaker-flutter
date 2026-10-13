@@ -17,14 +17,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Impostazioni Account'),
+        title: const Text('Account Settings'),
       ),
       body: ListView(
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              'NOTIFICHE',
+              'NOTIFICATIONS',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -33,8 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           SwitchListTile(
-            title: const Text('Notifiche push'),
-            subtitle: const Text('Ricevi aggiornamenti su nuove partite'),
+            title: const Text('Push notifications'),
+            subtitle: const Text('Receive updates about new matches'),
             value: _pushNotifications,
             onChanged: (val) {
               setState(() {
@@ -43,8 +43,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           SwitchListTile(
-            title: const Text('Promemoria partite'),
-            subtitle: const Text('Notifica 2 ore prima del fischio d\'inizio'),
+            title: const Text('Match reminders'),
+            subtitle: const Text('Notification 2 hours before kickoff'),
             value: _matchReminders,
             onChanged: (val) {
               setState(() {
@@ -56,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
-              'PREFERENZE',
+              'PREFERENCES',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -65,8 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           SwitchListTile(
-            title: const Text('Tema scuro'),
-            subtitle: const Text('Attiva modalità notturna'),
+            title: const Text('Dark mode'),
+            subtitle: const Text('Enable dark theme'),
             value: _darkMode,
             onChanged: (val) {
               setState(() {
@@ -78,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
-              'SICUREZZA E SESSIONE',
+              'SECURITY & SESSION',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -88,21 +88,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.lock_reset),
-            title: const Text('Modifica Password'),
+            title: const Text('Change Password'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Funzionalità disponibile nella Milestone 2')),
+                const SnackBar(content: Text('Feature available in Milestone 2')),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Esci dall\'account', style: TextStyle(color: Colors.red)),
+            title: const Text('Log out', style: TextStyle(color: Colors.red)),
             onTap: () {
-              Navigator.push(
+              Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
               );
             },
           ),

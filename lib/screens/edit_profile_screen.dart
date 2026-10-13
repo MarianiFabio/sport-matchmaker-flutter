@@ -7,11 +7,11 @@ class EditProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modifica Profilo'),
+        title: const Text('Edit Profile'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            tooltip: 'Salva modifiche',
+            tooltip: 'Save changes',
             onPressed: () {
               Navigator.pop(context);
             },
@@ -44,8 +44,8 @@ class EditProfileScreen extends StatelessWidget {
           const SizedBox(height: 32),
           const TextField(
             decoration: InputDecoration(
-              labelText: 'Nome completo',
-              hintText: 'Es. Mario Rossi',
+              labelText: 'Full Name',
+              hintText: 'e.g. John Doe',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.badge_outlined),
             ),
@@ -53,8 +53,8 @@ class EditProfileScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const TextField(
             decoration: InputDecoration(
-              labelText: 'Città / Zona di gioco',
-              hintText: 'Es. Milano Nord',
+              labelText: 'City / Playing Area',
+              hintText: 'e.g. North Milan',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.place_outlined),
             ),
@@ -63,7 +63,7 @@ class EditProfileScreen extends StatelessWidget {
           const TextField(
             keyboardType: TextInputType.phone,
             decoration: InputDecoration(
-              labelText: 'Numero di Telefono',
+              labelText: 'Phone Number',
               hintText: '+39 333 1234567',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.phone_outlined),
@@ -73,8 +73,8 @@ class EditProfileScreen extends StatelessWidget {
           const TextField(
             maxLines: 3,
             decoration: InputDecoration(
-              labelText: 'Bio & Sport preferiti',
-              hintText: 'Appassionato di calcetto e padel...',
+              labelText: 'Bio & Favorite Sports',
+              hintText: 'Enthusiast of football and padel...',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.edit_note_outlined),
             ),
@@ -83,7 +83,7 @@ class EditProfileScreen extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.save),
-            label: const Text('Salva Informazioni'),
+            label: const Text('Save Information'),
           ),
         ],
       ),

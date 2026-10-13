@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _isLogin ? 'Bentornato!' : 'Crea un Account',
+                  _isLogin ? 'Welcome Back!' : 'Create an Account',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -37,8 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _isLogin
-                      ? 'Accedi per trovare compagni e organizzare partite'
-                      : 'Registrati per iniziare a giocare nella tua città',
+                      ? 'Sign in to find teammates and organize matches'
+                      : 'Sign up to start playing in your city',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.grey),
                 ),
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (!_isLogin) ...[
                   const TextField(
                     decoration: InputDecoration(
-                      labelText: 'Nome completo',
+                      labelText: 'Full Name',
                       prefixIcon: Icon(Icons.person_outline),
                       border: OutlineInputBorder(),
                     ),
@@ -73,10 +74,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () {
-                    // Chiude la schermata di login e torna all'app
-                    Navigator.pop(context);
+                    // Accede all'app aprendo la schermata principale
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainNavigationScreen(),
+                      ),
+                    );
                   },
-                  child: Text(_isLogin ? 'Accedi' : 'Registrati'),
+                  child: Text(_isLogin ? 'Sign In' : 'Sign Up'),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -87,8 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(
                     _isLogin
-                        ? 'Non hai un account? Registrati'
-                        : 'Hai già un account? Accedi',
+                        ? 'Don\'t have an account? Sign up'
+                        : 'Already have an account? Sign in',
                   ),
                 ),
               ],
