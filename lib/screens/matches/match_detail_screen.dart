@@ -50,7 +50,7 @@ class MatchDetailScreen extends StatelessWidget {
                   Divider(height: 1),
                   ListTile(
                     leading: CircleAvatar(child: Text('AP')),
-                    title: Text('Andrius'),
+                    title: Text('Andrea'),
                     subtitle: Text('Reliability: 95%'),
                   ),
                   Divider(height: 1),
