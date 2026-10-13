@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'my_matches_screen.dart';
+import '../matches/my_matches_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -105,12 +105,12 @@ class ProfileScreen extends StatelessWidget {
                 );
               },
             ),
-            ListTile(
+            /*ListTile(
               leading: const Icon(Icons.notifications_none),
               title: const Text('Urgent Alerts & Notifications'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {},
-            ),
+            ),*/
           ],
         ),
       ),

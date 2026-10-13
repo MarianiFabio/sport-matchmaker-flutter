@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'match_feed_screen.dart';
-import 'create_match_screen.dart';
-import 'profile_screen.dart';
+import 'matches/match_feed_screen.dart';
+import 'matches/create_match_screen.dart';
+import 'profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

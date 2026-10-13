@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/match_item.dart';
+import '../../models/match_item.dart';
 
 class MatchDetailScreen extends StatelessWidget {
   final MatchItem match;
