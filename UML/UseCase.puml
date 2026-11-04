@@ -1,58 +1,63 @@
 @startuml
-
 left to right direction
 skinparam packageStyle rectangle
 skinparam roundcorner 10
 
-
 actor "User" as U
 actor "Organizer" as O
-actor "System" as S
 
-' Specializzazione: Organizer è un User
+' Specializzazione: Organizer eredita tutte le azioni dello User
 O -up-|> U
 
-rectangle "SportMatch Platform" {
-    ' Account & Profilo
-    usecase "Login" as UC_Login
-    usecase "Edit Profile & Settings" as UC_Profile
-    usecase "Receive Push Notifications" as UC_Notif
+rectangle "Amateur Sports Platform" {
 
-    ' Ricerca e Partecipazione
-    usecase "Search Matches" as UC_Search
-    usecase "Search Nearby Matches" as UC_SearchNear
-    usecase "Filter Matches" as UC_SearchFilter
-    usecase "Join Match" as UC_Join
+    ' Accesso e Profilo
+    usecase "Authenticate (Login / Register)" as UC_Auth
+    usecase "Manage Profile & Reliability" as UC_Profile
+    usecase "Receive Notifications" as UC_Notif
 
-    ' Storico e Partite Registrate
-    usecase "View Matches Details" as UC_View
+    ' Ricerca Partite Pubbliche
+    usecase "Search Public Matches" as UC_Search
+    usecase "Filter by Sport & Date" as UC_Filter
+    usecase "Search Nearby Matches (GPS)" as UC_SearchNear
+    usecase "View Match Details" as UC_Details
+    usecase "Request to Join Match" as UC_Join
+
+    ' Le Mie Partite (Iscrizioni e Storico)
+    usecase "View My Matches" as UC_MyMatches
     usecase "View Upcoming Matches" as UC_Upcoming
-    usecase "View Past Matches" as UC_History
+    usecase "View Past Matches" as UC_Past
+    usecase "Leave Match" as UC_Leave
 
-    ' Azioni specifiche Organizzatore
+    ' Azioni specifiche dell'Organizzatore
     usecase "Create Match" as UC_Create
     usecase "Manage Created Matches" as UC_Manage
+    usecase "Review Join Requests" as UC_Requests
 }
 
-' Collegamenti Utente (base)
-U --> UC_Login
+' Collegamenti Utente (Base)
+U --> UC_Auth
 U --> UC_Profile
-U --> UC_Search
-U --> UC_View
 U --> UC_Notif
+U --> UC_Search
+U --> UC_MyMatches
 
-UC_Upcoming -up-|> UC_View
-UC_History -up-|> UC_View
-
-' Relazioni tra casi d'uso di ricerca
+' Specializzazioni della ricerca pubblica
+UC_Filter -up-|> UC_Search
 UC_SearchNear -up-|> UC_Search
-UC_SearchFilter -up-|> UC_Search
-UC_Join ..> UC_Search : <<extend>>
 
-' Collegamenti Organizzatore (eredita tutto da User + ha i suoi)
+' Flusso Dettaglio e Partecipazione
+UC_Details .left.> UC_Search : <<extend>>
+UC_Join .up.> UC_Details : <<extend>>
+
+' Specializzazioni "Le Mie Partite"
+UC_Upcoming -up-|> UC_MyMatches
+UC_Past -up-|> UC_MyMatches
+UC_Leave .up.> UC_Upcoming : <<extend>>
+
+' Collegamenti Organizzatore
 O --> UC_Create
 O --> UC_Manage
+UC_Requests .up.> UC_Manage : <<extend>>
 
-' Attore secondario System (lato destro)
-UC_Notif <-down- S
 @enduml
