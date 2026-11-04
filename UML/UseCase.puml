@@ -1,0 +1,58 @@
+@startuml
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+
+
+actor "User" as U
+actor "Organizer" as O
+actor "System" as S
+
+' Specializzazione: Organizer è un User
+O -up-|> U
+
+rectangle "SportMatch Platform" {
+    ' Account & Profilo
+    usecase "Login" as UC_Login
+    usecase "Edit Profile & Settings" as UC_Profile
+    usecase "Receive Push Notifications" as UC_Notif
+
+    ' Ricerca e Partecipazione
+    usecase "Search Matches" as UC_Search
+    usecase "Search Nearby Matches" as UC_SearchNear
+    usecase "Filter Matches" as UC_SearchFilter
+    usecase "Join Match" as UC_Join
+
+    ' Storico e Partite Registrate
+    usecase "View Matches Details" as UC_View
+    usecase "View Upcoming Matches" as UC_Upcoming
+    usecase "View Past Matches" as UC_History
+
+    ' Azioni specifiche Organizzatore
+    usecase "Create Match" as UC_Create
+    usecase "Manage Created Matches" as UC_Manage
+}
+
+' Collegamenti Utente (base)
+U --> UC_Login
+U --> UC_Profile
+U --> UC_Search
+U --> UC_View
+U --> UC_Notif
+
+UC_Upcoming -up-|> UC_View
+UC_History -up-|> UC_View
+
+' Relazioni tra casi d'uso di ricerca
+UC_SearchNear -up-|> UC_Search
+UC_SearchFilter -up-|> UC_Search
+UC_Join ..> UC_Search : <<extend>>
+
+' Collegamenti Organizzatore (eredita tutto da User + ha i suoi)
+O --> UC_Create
+O --> UC_Manage
+
+' Attore secondario System (lato destro)
+UC_Notif <-down- S
+@enduml
