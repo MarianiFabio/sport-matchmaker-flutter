@@ -1,0 +1,82 @@
+@startchen
+
+' --- ENTITÀ PRINCIPALI ---
+entity USER {
+  ID_User <<key>>
+  Nome
+  Cognome
+  Email
+  PasswordHash
+  Username
+  Karma_Score
+  Livello_Abilita
+}
+
+entity PLAYER {
+}
+
+entity ORGANIZER {
+}
+
+entity MATCH {
+  ID_Match <<key>>
+  Data
+  Ora_Inizio
+  Ora_Fine
+  Posti_Totali
+  Posti_Mancanti
+  Quota_Persona
+  Stato_Match
+}
+
+entity SPORT {
+  ID_Sport <<key>>
+  Nome_Sport
+  Giocatori_Default
+}
+
+entity VENUE {
+  ID_Venue <<key>>
+  Nome_Struttura
+  Indirizzo
+  Latitudine
+  Longitudine
+}
+
+' --- GENERALIZZAZIONE ---
+' Generalizzazione totale (=>=) e overlapping (o)
+USER =>= o { PLAYER, ORGANIZER }
+
+' --- ASSOCIAZIONI (RELAZIONI) ---
+relationship CREA {
+}
+
+relationship RICHIEDE_ISCRIZIONE {
+  Data_Richiesta
+  Stato_Richiesta
+}
+
+relationship APPARTIENE_A {
+}
+
+relationship SI_SVOLGE_IN {
+}
+
+' --- CARDINALITÀ ---
+' Un Organizzatore crea 1 o N match; un Match è creato da 1 e 1 solo Organizzatore
+CREA -(1,N)- ORGANIZER
+CREA -(1,1)- MATCH
+
+' Un Giocatore richiede iscrizione a 0 o N match; un Match riceve iscrizioni da 0 o N Giocatori
+RICHIEDE_ISCRIZIONE -(0,N)- PLAYER
+RICHIEDE_ISCRIZIONE -(0,N)- MATCH
+
+' Un Match appartiene a 1 e 1 solo Sport; uno Sport è giocato in 0 o N Match
+APPARTIENE_A -(1,1)- MATCH
+APPARTIENE_A -(0,N)- SPORT
+
+' Un Match si svolge in 1 e 1 sola Venue; una Venue ospita 0 o N Match
+SI_SVOLGE_IN -(1,1)- MATCH
+SI_SVOLGE_IN -(0,N)- VENUE
+
+@endchen

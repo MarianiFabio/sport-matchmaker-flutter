@@ -2,37 +2,56 @@
 left to right direction
 skinparam packageStyle rectangle
 skinparam roundcorner 10
+'skinparam actorStyle awesome
 
 actor "User" as U
 actor "Organizer" as O
 
-' Specializzazione: Organizer eredita tutte le azioni dello User
-O -up-|> U
+' Specializzazione: Organizer è un User
+O -left-|> U
 
 rectangle "Amateur Sports Platform" {
 
-    ' Accesso e Profilo
-    usecase "Authenticate (Login / Register)" as UC_Auth
-    usecase "Manage Profile & Reliability" as UC_Profile
-    usecase "Receive Notifications" as UC_Notif
+    ' Profilo & Preferenze
+    package "Account & Preferences" {
+        usecase "Authenticate\n(Login / Register)" as UC_Auth
+        usecase "Manage Profile, Sports\n& Skill Level" as UC_Profile
+        usecase "Receive Notifications\n& SOS Alerts" as UC_Notif
+    }
 
-    ' Ricerca Partite Pubbliche
-    usecase "Search Public Matches" as UC_Search
-    usecase "Filter by Sport & Date" as UC_Filter
-    usecase "Search Nearby Matches (GPS)" as UC_SearchNear
-    usecase "View Match Details" as UC_Details
-    usecase "Request to Join Match" as UC_Join
+    ' Ricerca & Discovery
+    package "Match Discovery" {
+        usecase "Search Public Matches" as UC_Search
+        usecase "Filter by Sport, Date\n& Skill Level" as UC_Filter
+        usecase "Search Nearby Matches (GPS)" as UC_SearchNear
+        usecase "Set Scheduled Match Alert" as UC_Alert
+        usecase "View Match Details" as UC_Details
+    }
 
-    ' Le Mie Partite (Iscrizioni e Storico)
-    usecase "View My Matches" as UC_MyMatches
-    usecase "View Upcoming Matches" as UC_Upcoming
-    usecase "View Past Matches" as UC_Past
-    usecase "Leave Match" as UC_Leave
+    ' Partecipazione & Chat di Partita
+    package "Participation & Match Hub" {
+        usecase "View My Matches" as UC_MyMatches
+        usecase "View Upcoming Matches" as UC_Upcoming
+        usecase "View Past Matches" as UC_Past
+        usecase "Request to Join Match" as UC_Join
+        usecase "Leave Match" as UC_Leave
+        usecase "Use Event Match Chat" as UC_EventChat
+    }
 
-    ' Azioni specifiche dell'Organizzatore
-    usecase "Create Match" as UC_Create
-    usecase "Manage Created Matches" as UC_Manage
-    usecase "Review Join Requests" as UC_Requests
+    ' Club & Gruppi Amici
+    package "Clubs & Friend Groups" {
+        usecase "Manage Friend Groups" as UC_ManageGroup
+        usecase "Use Group Chat" as UC_GroupChat
+        usecase "Propose Group Match (Poll)" as UC_GroupPoll
+        usecase "Convert Group Match\nto Public" as UC_ConvertPublic
+    }
+
+    ' Gestione Organizzatore
+    package "Match Organization" {
+        usecase "Create Match" as UC_Create
+        usecase "Manage Created Matches\n(Edit / Cancel)" as UC_Manage
+        usecase "Review Join Requests" as UC_Requests
+    }
 }
 
 ' Collegamenti Utente (Base)
@@ -40,24 +59,32 @@ U --> UC_Auth
 U --> UC_Profile
 U --> UC_Notif
 U --> UC_Search
+U --> UC_Alert
 U --> UC_MyMatches
+U --> UC_ManageGroup
+U --> UC_GroupChat
 
-' Specializzazioni della ricerca pubblica
+' Specializzazioni Ricerca
 UC_Filter -up-|> UC_Search
 UC_SearchNear -up-|> UC_Search
 
-' Flusso Dettaglio e Partecipazione
+' Flussi Estesi con Condizioni (Guardie)
 UC_Details .left.> UC_Search : <<extend>>
-UC_Join .up.> UC_Details : <<extend>>
+UC_Join .up.> UC_Details : <<extend>>\n[spots available]
+UC_EventChat .left.> UC_Details : <<extend>>\n[confirmed player]
 
 ' Specializzazioni "Le Mie Partite"
 UC_Upcoming -up-|> UC_MyMatches
 UC_Past -up-|> UC_MyMatches
-UC_Leave .up.> UC_Upcoming : <<extend>>
+UC_Leave .up.> UC_Upcoming : <<extend>>\n[before match]
+
+' Flussi nei Gruppi
+UC_GroupPoll .up.> UC_ManageGroup : <<extend>>
 
 ' Collegamenti Organizzatore
 O --> UC_Create
 O --> UC_Manage
 UC_Requests .up.> UC_Manage : <<extend>>
+UC_ConvertPublic .up.> UC_GroupPoll : <<extend>>\n[missing spots]
 
 @enduml

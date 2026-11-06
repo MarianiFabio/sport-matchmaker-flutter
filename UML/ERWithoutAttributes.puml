@@ -1,0 +1,47 @@
+@startchen
+!theme sunlust
+
+
+entity USER {
+}
+entity PLAYER {
+}
+entity ORGANIZER {
+}
+
+' Generalizzazione
+USER =>= o { PLAYER, ORGANIZER }
+
+entity MATCH {
+}
+
+relationship RICHIEDE_ISCRIZIONE {
+}
+relationship CREA {
+}
+
+' Collegamenti Utenti -> Relazioni -> Match
+PLAYER -(0,N)- RICHIEDE_ISCRIZIONE
+RICHIEDE_ISCRIZIONE -(0,N)- MATCH
+
+ORGANIZER -(1,N)- CREA
+CREA -(1,1)- MATCH
+
+' Relazioni e cataloghi
+entity SPORT {
+}
+relationship APPARTIENE_A {
+}
+
+entity VENUE {
+}
+relationship SI_SVOLGE_IN {
+}
+
+MATCH -(1,1)- APPARTIENE_A
+APPARTIENE_A -(0,N)- SPORT
+
+MATCH -(1,1)- SI_SVOLGE_IN
+SI_SVOLGE_IN -(0,N)- VENUE
+
+@endchen
