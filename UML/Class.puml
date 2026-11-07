@@ -1,0 +1,96 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam roundcorner 10
+
+' --- ENUMERAZIONI ---
+enum MatchStatus {
+  OPEN
+  FULL
+  CANCELLED
+  COMPLETED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+' --- CLASSI PRINCIPALI (CON EREDITARIETÀ) ---
+abstract class User {
+  - idUser: Integer
+  - nome: String
+  - cognome: String
+  - email: String
+  - passwordHash: String
+  - username: String
+  - karmaScore: Integer
+  - livelloAbilita: String
+  + authenticate(): Boolean
+  + updateProfile(): void
+}
+
+class Player {
+  + searchMatches(filters: Object): List<Match>
+  + joinMatch(m: Match): JoinRequest
+  + leaveMatch(m: Match): void
+}
+
+class Organizer {
+  + createMatch(): Match
+  + editMatch(m: Match): void
+  + cancelMatch(m: Match): void
+  + reviewRequest(req: JoinRequest, isAccepted: Boolean): void
+}
+
+' Ereditarietà
+User <|-- Player
+User <|-- Organizer
+
+' --- CLASSI DI DOMINIO ---
+class Match {
+  - idMatch: Integer
+  - data: Date
+  - oraInizio: Time
+  - oraFine: Time
+  - postiTotali: Integer
+  - postiMancanti: Integer
+  - quotaPersona: Float
+  - statoMatch: MatchStatus
+  + updateSpots(): void
+  + getDetails(): String
+}
+
+class Sport {
+  - idSport: Integer
+  - nomeSport: String
+  - giocatoriDefault: Integer
+}
+
+class Venue {
+  - idVenue: Integer
+  - nomeStruttura: String
+  - indirizzo: String
+  - latitudine: Double
+  - longitudine: Double
+  + getLocation(): String
+}
+
+' --- CLASSE INTERMEDIA (Risoluzione N:M) ---
+class JoinRequest {
+  - idRequest: Integer
+  - dataRichiesta: DateTime
+  - statoRichiesta: RequestStatus
+  + updateStatus(newStatus: RequestStatus): void
+}
+
+' --- RELAZIONI E CARDINALITÀ ---
+Organizer "1" --> "*" Match : creates >
+Match "*" --> "1" Sport : belongs to >
+Match "*" --> "1" Venue : takes place at >
+
+Player "1" --> "*" JoinRequest : makes >
+Match "1" --> "*" JoinRequest : receives >
+
+@enduml

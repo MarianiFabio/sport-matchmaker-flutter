@@ -1,0 +1,85 @@
+Schema Logico (Modello Relazionale)
+
+Convenzioni usate:
+
+    PK (Primary Key): Chiave primaria (identificatore univoco).
+
+    FK (Foreign Key): Chiave esterna (collegamento a un'altra tabella).
+
+1. USER (Gestisce l'autenticazione, i profili e la gerarchia dei ruoli)
+
+    ID_User (PK, INT, Auto-increment)
+
+    Nome (VARCHAR)
+
+    Cognome (VARCHAR)
+
+    Email (VARCHAR, Unique)
+
+    PasswordHash (VARCHAR)
+
+    Username (VARCHAR, Unique)
+
+    Karma_Score (INT, Default 100)
+
+    Livello_Abilita (VARCHAR)
+
+    Is_Player (BOOLEAN)
+
+    Is_Organizer (BOOLEAN)
+
+2. SPORT (Tabella dizionario per le discipline)
+
+    ID_Sport (PK, INT, Auto-increment)
+
+    Nome_Sport (VARCHAR)
+
+    Giocatori_Default (INT)
+
+3. VENUE (Impianti e luoghi di gioco)
+
+    ID_Venue (PK, INT, Auto-increment)
+
+    Nome_Struttura (VARCHAR)
+
+    Indirizzo (VARCHAR)
+
+    Latitudine (DECIMAL/DOUBLE)
+
+    Longitudine (DECIMAL/DOUBLE)
+
+4. MATCH (La partita creata, assorbe le relazioni 1:N)
+
+    ID_Match (PK, INT, Auto-increment)
+
+    Data (DATE)
+
+    Ora_Inizio (TIME)
+
+    Ora_Fine (TIME)
+
+    Posti_Totali (INT)
+
+    Posti_Mancanti (INT)
+
+    Quota_Persona (DECIMAL)
+
+    Stato_Match (ENUM: 'OPEN', 'FULL', 'CANCELLED', 'COMPLETED')
+
+    ID_Organizer (FK) -> Riferimento a USER(ID_User)
+
+    ID_Sport (FK) -> Riferimento a SPORT(ID_Sport)
+
+    ID_Venue (FK) -> Riferimento a VENUE(ID_Venue)
+
+5. JOIN_REQUEST (Tabella ponte che risolve la relazione N:M "Richiede_Iscrizione")
+
+    ID_Request (PK, INT, Auto-increment)
+
+    Data_Richiesta (DATETIME)
+
+    Stato_Richiesta (ENUM: 'PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED')
+
+    ID_Player (FK) -> Riferimento a USER(ID_User)
+
+    ID_Match (FK) -> Riferimento a MATCH(ID_Match)

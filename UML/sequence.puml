@@ -1,0 +1,48 @@
+@startuml
+skinparam roundcorner 10
+skinparam maxmessagesize 200
+skinparam sequence {
+    ParticipantBackgroundColor White
+    ParticipantBorderColor DarkSlateGray
+    LifeLineBorderColor DarkSlateGray
+    ArrowColor #2C3E50
+}
+autonumber
+
+actor "Player" as P
+participant "Client\n(Flutter / Web JS)" as C
+participant "Backend API\n(Node.js / PHP)" as S
+database "Database\n(MySQL / PostgreSQL)" as DB
+actor "Organizer" as O
+
+P -> C : Clicca "Join Match" 
+activate C
+
+C -> S : POST /api/bookings\n{matchId, userId}
+activate S
+
+S -> DB : SELECT posti_mancanti \nFROM Match WHERE id_match = matchId
+activate DB
+DB --> S : Restituisce posti disponibili
+deactivate DB
+
+alt posti_mancanti > 0
+    S -> DB : INSERT INTO Booking\n(userId, matchId, status='PENDING')
+    activate DB
+    DB --> S : Inserimento completato
+    deactivate DB
+
+    S --> C : HTTP 201 Created\n(Richiesta registrata)
+    
+    C --> P : Aggiorna UI: "In attesa di approvazione"
+    
+    S -> O : Invia Notifica Push:\n"Nuovo giocatore in attesa"
+
+else posti_mancanti == 0
+    S --> C : HTTP 409 Conflict\n(Partita Piena)
+    C --> P : Mostra Alert: "Errore: Posti esauriti"
+end
+deactivate S
+deactivate C
+
+@enduml

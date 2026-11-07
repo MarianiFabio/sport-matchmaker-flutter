@@ -1,0 +1,40 @@
+@startuml
+left to right direction
+skinparam roundcorner 10
+skinparam componentStyle rectangle
+
+' Stile personalizzato per i nodi fisici
+skinparam node {
+    BackgroundColor White
+    BorderColor DarkSlateGray
+}
+
+' --- DISPOSITIVI CLIENT ---
+node "User Smartphone" <<Device>> as mobile {
+    component "SportMatch Mobile App\n(Flutter / Dart)" as MobileApp
+}
+
+node "User Personal Computer" <<Device>> as pc {
+    node "Web Browser" <<Execution Environment>> {
+        component "SportMatch Web Client\n(HTML5, CSS3, Vanilla JS)" as WebApp
+    }
+}
+
+' --- INFRASTRUTTURA SERVER ---
+node "Application Server" <<Server>> as appServer {
+    node "Web/API Runtime" <<Execution Environment>> {
+        component "SportMatch REST API\n(Node.js / PHP)" as BackendAPI
+    }
+}
+
+node "Database Server" <<Server>> as dbServer {
+    database "Relational Database\n(MySQL / PostgreSQL)" as Database
+}
+
+' --- CONNESSIONI E PROTOCOLLI ---
+MobileApp 0..> BackendAPI : <<protocol>> HTTPS / REST (JSON)
+WebApp 0..> BackendAPI : <<protocol>> HTTPS / REST (JSON)
+
+BackendAPI 0..> Database : <<protocol>> TCP/IP / SQL
+
+@enduml
