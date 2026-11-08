@@ -1,0 +1,72 @@
+-- 1. TABLE CREATION
+
+CREATE TABLE USERS (
+    ID_User INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Surname VARCHAR(100) NOT NULL,
+    Email VARCHAR(150) NOT NULL UNIQUE,
+    PasswordHash VARCHAR(255) NOT NULL,
+    Username VARCHAR(100) NOT NULL UNIQUE,
+    Karma_Score INT DEFAULT 100,
+    Ability_Level VARCHAR(50),
+    Is_Player BOOLEAN DEFAULT TRUE,
+    Is_Organizer BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE SPORT (
+    ID_Sport INT AUTO_INCREMENT PRIMARY KEY,
+    Sport_Name VARCHAR(100) NOT NULL,
+    Default_Players INT NOT NULL
+);
+
+CREATE TABLE VENUE (
+    ID_Venue INT AUTO_INCREMENT PRIMARY KEY,
+    Venue_Name VARCHAR(150) NOT NULL,
+    Address VARCHAR(255),
+    Latitude DECIMAL(10, 8),
+    Longitude DECIMAL(11, 8)
+);
+
+CREATE TABLE `MATCH` (
+    ID_Match INT AUTO_INCREMENT PRIMARY KEY,
+    Date DATE NOT NULL,
+    Start_Time TIME NOT NULL,
+    End_Time TIME,
+    Total_Slots INT NOT NULL,
+    Remaining_Slots INT NOT NULL,
+    Fee_Per_Person DECIMAL(6, 2),
+    Match_Status ENUM('OPEN', 'FULL', 'CANCELLED', 'COMPLETED') DEFAULT 'OPEN',
+    ID_Organizer INT NOT NULL,
+    ID_Sport INT NOT NULL,
+    ID_Venue INT NOT NULL,
+    FOREIGN KEY (ID_Organizer) REFERENCES USERS(ID_User) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Sport) REFERENCES SPORT(ID_Sport) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Venue) REFERENCES VENUE(ID_Venue) ON DELETE CASCADE
+);
+
+CREATE TABLE JOIN_REQUEST (
+    ID_Request INT AUTO_INCREMENT PRIMARY KEY,
+    Request_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Request_Status ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED') DEFAULT 'PENDING',
+    ID_Player INT NOT NULL,
+    ID_Match INT NOT NULL,
+    FOREIGN KEY (ID_Player) REFERENCES USERS(ID_User) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Match) REFERENCES `MATCH`(ID_Match) ON DELETE CASCADE
+);
+
+-- 2. DUMMY DATA INSERTION (For the Flutter demo)
+
+INSERT INTO USERS (Name, Surname, Email, PasswordHash, Username, Ability_Level, Is_Player, Is_Organizer) VALUES
+('Fabio', 'Mariani', 'fabio@email.com', 'hash_psw', 'fabio_m', 'Advanced', TRUE, TRUE),
+('Luca', 'Bianchi', 'luca@email.com', 'hash_psw', 'lucab', 'Intermediate', TRUE, FALSE);
+
+INSERT INTO SPORT (Sport_Name, Default_Players) VALUES
+('5-a-side Football', 10),
+('Padel', 4);
+
+INSERT INTO VENUE (Venue_Name, Address, Latitude, Longitude) VALUES
+('Centro Sportivo San Siro', 'Via Piccolomini 2, Milano', 45.478100, 9.123900);
+
+INSERT INTO `MATCH` (Date, Start_Time, End_Time, Total_Slots, Remaining_Slots, Fee_Per_Person, ID_Organizer, ID_Sport, ID_Venue) VALUES
+('2026-11-10', '20:00:00', '21:30:00', 10, 1, 7.50, 1, 1, 1),
+('2026-11-12', '18:00:00', '19:30:00', 4, 2, 12.00, 1, 2, 1);

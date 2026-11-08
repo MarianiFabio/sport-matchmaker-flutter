@@ -87,10 +87,10 @@ class JoinRequest {
 
 ' --- RELAZIONI E CARDINALITÀ ---
 Organizer "1" --> "*" Match : creates >
-Match "*" --> "1" Sport : belongs to >
-Match "*" --> "1" Venue : takes place at >
+Match "*" -right-> "1" Sport : belongs to >
+Match "*" -right-> "1" Venue : takes place at >
 
 Player "1" --> "*" JoinRequest : makes >
-Match "1" --> "*" JoinRequest : receives >
+Match "1" -left-> "*" JoinRequest : receives >
 
 @enduml

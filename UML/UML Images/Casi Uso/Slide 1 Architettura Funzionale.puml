@@ -1,0 +1,38 @@
+@startuml
+left to right direction
+skinparam dpi 200
+skinparam defaultFontSize 14
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam nodesep 40
+skinparam ranksep 60
+
+actor "User" as U
+actor "Organizer" as O
+
+' Specializzazione attori
+O -up-|> U
+
+rectangle "Amateur Sports Platform" {
+    package "Account & Preferences" as PKG_Acc
+    package "Match Discovery" as PKG_Disc
+    package "Participation & Match Hub" as PKG_Part
+    package "Clubs & Friend Groups" as PKG_Clubs
+    package "Match Organization" as PKG_Org
+}
+
+' Relazioni Utente (Base)
+U --> PKG_Acc
+U --> PKG_Disc
+U --> PKG_Part
+U --> PKG_Clubs
+
+' Relazioni Organizzatore
+O --> PKG_Org
+
+' Dipendenze logiche tra package
+PKG_Part .[#gray].> PKG_Disc : <<access>>
+PKG_Org .[#gray].> PKG_Part : <<manage>>
+PKG_Clubs .[#gray].> PKG_Disc : <<promote>>
+
+@enduml

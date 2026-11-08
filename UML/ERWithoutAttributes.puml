@@ -1,6 +1,8 @@
 @startchen
-!theme sunlust
+left to right direction
 
+skinparam nodesep 20
+skinparam ranksep 20
 
 entity USER {
 }
@@ -9,39 +11,38 @@ entity PLAYER {
 entity ORGANIZER {
 }
 
-' Generalizzazione
+' Generalization
 USER =>= o { PLAYER, ORGANIZER }
 
 entity MATCH {
 }
 
-relationship RICHIEDE_ISCRIZIONE {
+relationship REQUESTS_REGISTRATION {
 }
-relationship CREA {
+relationship CREATES {
 }
 
-' Collegamenti Utenti -> Relazioni -> Match
-PLAYER -(0,N)- RICHIEDE_ISCRIZIONE
-RICHIEDE_ISCRIZIONE -(0,N)- MATCH
+' User -> Relationship -> Match Connections
+PLAYER -(0,N)- REQUESTS_REGISTRATION
+REQUESTS_REGISTRATION -(0,N)- MATCH
 
-ORGANIZER -(1,N)- CREA
-CREA -(1,1)- MATCH
+ORGANIZER -(1,N)- CREATES
+CREATES -(1,1)- MATCH
 
-' Relazioni e cataloghi
 entity SPORT {
 }
-relationship APPARTIENE_A {
+relationship BELONGS_TO {
 }
 
 entity VENUE {
 }
-relationship SI_SVOLGE_IN {
+relationship TAKES_PLACE_IN {
 }
 
-MATCH -(1,1)- APPARTIENE_A
-APPARTIENE_A -(0,N)- SPORT
+MATCH -(1,1)- BELONGS_TO
+BELONGS_TO -(0,N)- SPORT
 
-MATCH -(1,1)- SI_SVOLGE_IN
-SI_SVOLGE_IN -(0,N)- VENUE
+MATCH -(1,1)- TAKES_PLACE_IN
+TAKES_PLACE_IN -(0,N)- VENUE
 
 @endchen

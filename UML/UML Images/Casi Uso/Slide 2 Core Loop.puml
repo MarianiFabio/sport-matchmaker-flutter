@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+skinparam dpi 200
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam nodesep 30
+skinparam ranksep 40
+
+actor "User" as U
+actor "Organizer" as O
+O -left-|> U
+
+rectangle "Match Lifecycle & Discovery" {
+
+    package "Match Discovery" {
+        usecase "Search Public Matches" as UC_Search
+        usecase "Filter Matches\n(Sport/Date/Level)" as UC_Filter
+        usecase "Search Nearby (GPS)" as UC_SearchNear
+        usecase "Set Scheduled Alert" as UC_Alert
+        usecase "View Match Details" as UC_Details
+    }
+
+    package "Participation & Match Hub" {
+        usecase "View My Matches" as UC_MyMatches
+        usecase "View Upcoming Matches" as UC_Upcoming
+        usecase "View Past Matches" as UC_Past
+        usecase "Request to Join Match" as UC_Join
+        usecase "Leave Match" as UC_Leave
+        usecase "Use Event Match Chat" as UC_EventChat
+    }
+
+    package "Match Organization" {
+        usecase "Create Match" as UC_Create
+        usecase "Manage Created Matches\n(Edit / Cancel)" as UC_Manage
+        usecase "Review Join Requests" as UC_Requests
+    }
+}
+
+' Collegamenti Utente
+U --> UC_Search
+U --> UC_Alert
+U --> UC_MyMatches
+
+' Specializzazioni Discovery
+UC_Filter -up-|> UC_Search
+UC_SearchNear -up-|> UC_Search
+
+' Flusso dal dettaglio partita
+UC_Details .left.> UC_Search : <<extend>>
+UC_Join .up.> UC_Details : <<extend>>\n[spots available]
+UC_EventChat .left.> UC_Details : <<extend>>\n[confirmed player]
+
+' Specializzazioni e flussi My Matches
+UC_Upcoming -up-|> UC_MyMatches
+UC_Past -up-|> UC_MyMatches
+UC_Leave .up.> UC_Upcoming : <<extend>>\n[before match]
+
+' Collegamenti Organizzatore
+O --> UC_Create
+O --> UC_Manage
+UC_Requests .up.> UC_Manage : <<extend>>
+
+@enduml

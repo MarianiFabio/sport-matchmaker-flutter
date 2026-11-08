@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+skinparam dpi 200
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam nodesep 30
+skinparam ranksep 40
+
+actor "User" as U
+
+rectangle "Community & Account Management" {
+
+    package "Account & Preferences" {
+        usecase "Authenticate\n(Login / Register)" as UC_Auth
+        usecase "Manage Profile, Sports\n& Skill Level" as UC_Profile
+        usecase "Receive Notifications\n& SOS Alerts" as UC_Notif
+    }
+
+    package "Clubs & Friend Groups" {
+        usecase "Manage Friend Groups" as UC_ManageGroup
+        usecase "Use Group Chat" as UC_GroupChat
+        usecase "Propose Group Match\n(Poll)" as UC_GroupPoll
+        usecase "Convert Group Match\nto Public" as UC_ConvertPublic
+    }
+}
+
+' Collegamenti Utente
+U --> UC_Auth
+U --> UC_Profile
+U --> UC_Notif
+U --> UC_ManageGroup
+U --> UC_GroupChat
+
+' Flussi dei Gruppi
+UC_GroupPoll .up.> UC_ManageGroup : <<extend>>
+UC_ConvertPublic .up.> UC_GroupPoll : <<extend>>\n[missing spots]
+
+@enduml

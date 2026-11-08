@@ -35,26 +35,31 @@ class MatchDetailScreen extends StatelessWidget {
             Text('Confirmed Roster', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             // lista giocatori
-            // per domani metto giusto 3 elementi fissi per far vedere come viene
             Card(
               child: ListView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                children: const [
+                children: [
                   ListTile(
-                    leading: CircleAvatar(child: Text('FM')),
-                    title: Text('Fabio (Organizer)'),
-                    subtitle: Text('Reliability: 100%'),
-                    trailing: Chip(label: Text('Host'), visualDensity: VisualDensity.compact),
+                    leading: CircleAvatar(
+                      child: Text(
+                        (match.organizerName != null && match.organizerName!.isNotEmpty)
+                            ? match.organizerName!.substring(0, 1).toUpperCase()
+                            : 'FM',
+                      ),
+                    ),
+                    title: Text('${match.organizerName ?? 'Fabio'} (Organizer)'),
+                    subtitle: const Text('Reliability: 100%'),
+                    trailing: const Chip(label: Text('Host'), visualDensity: VisualDensity.compact),
                   ),
-                  Divider(height: 1),
-                  ListTile(
+                  const Divider(height: 1),
+                  const ListTile(
                     leading: CircleAvatar(child: Text('AP')),
                     title: Text('Andrea'),
                     subtitle: Text('Reliability: 95%'),
                   ),
-                  Divider(height: 1),
-                  ListTile(
+                  const Divider(height: 1),
+                  const ListTile(
                     leading: CircleAvatar(child: Icon(Icons.person_add_alt_1, color: Colors.grey)),
                     title: Text('Empty Spot', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
                     subtitle: Text('Waiting for request'),

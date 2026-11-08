@@ -1,6 +1,9 @@
 @startuml
-skinparam roundcorner 10
-skinparam maxmessagesize 200
+skinparam roundcorner 8
+skinparam defaultFontSize 12
+skinparam BoxPadding 10
+skinparam responseMessageBelowArrow false
+
 skinparam sequence {
     ParticipantBackgroundColor White
     ParticipantBorderColor DarkSlateGray
@@ -10,39 +13,37 @@ skinparam sequence {
 autonumber
 
 actor "Player" as P
-participant "Client\n(Flutter / Web JS)" as C
-participant "Backend API\n(Node.js / PHP)" as S
-database "Database\n(MySQL / PostgreSQL)" as DB
+participant "Client (App)" as C
+participant "Backend API" as S
+database "Database" as DB
 actor "Organizer" as O
 
-P -> C : Clicca "Join Match" 
+P -> C : Join Match
 activate C
 
-C -> S : POST /api/bookings\n{matchId, userId}
+C -> S : POST /api/bookings {matchId}
 activate S
 
-S -> DB : SELECT posti_mancanti \nFROM Match WHERE id_match = matchId
+S -> DB : SELECT remaining_slots
 activate DB
-DB --> S : Restituisce posti disponibili
+DB --> S : available_slots
 deactivate DB
 
-alt posti_mancanti > 0
-    S -> DB : INSERT INTO Booking\n(userId, matchId, status='PENDING')
+alt Slots available (> 0)
+    S -> DB : INSERT INTO Booking (PENDING)
     activate DB
-    DB --> S : Inserimento completato
+    DB --> S : OK
     deactivate DB
 
-    S --> C : HTTP 201 Created\n(Richiesta registrata)
-    
-    C --> P : Aggiorna UI: "In attesa di approvazione"
-    
-    S -> O : Invia Notifica Push:\n"Nuovo giocatore in attesa"
+    S --> C : 201 Created (Pending)
+    C --> P : UI: "Pending approval"
+    S -> O : Push: "New booking request"
 
-else posti_mancanti == 0
-    S --> C : HTTP 409 Conflict\n(Partita Piena)
-    C --> P : Mostra Alert: "Errore: Posti esauriti"
+else Match full (== 0)
+    S --> C : 409 Conflict
+    C --> P : Alert: "Match is full"
 end
+
 deactivate S
 deactivate C
-
 @enduml

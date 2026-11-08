@@ -1,18 +1,18 @@
-Schema Logico (Modello Relazionale)
+Logical Schema (Relational Model)
 
-Convenzioni usate:
+Conventions used:
 
-    PK (Primary Key): Chiave primaria (identificatore univoco).
+    PK (Primary Key): Unique identifier.
 
-    FK (Foreign Key): Chiave esterna (collegamento a un'altra tabella).
+    FK (Foreign Key): Reference link to another table.
 
-1. USER (Gestisce l'autenticazione, i profili e la gerarchia dei ruoli)
+1. USER (Handles authentication, profiles, and role hierarchy)
 
     ID_User (PK, INT, Auto-increment)
 
-    Nome (VARCHAR)
+    First_Name (VARCHAR)
 
-    Cognome (VARCHAR)
+    Last_Name (VARCHAR)
 
     Email (VARCHAR, Unique)
 
@@ -22,64 +22,64 @@ Convenzioni usate:
 
     Karma_Score (INT, Default 100)
 
-    Livello_Abilita (VARCHAR)
+    Skill_Level (VARCHAR)
 
     Is_Player (BOOLEAN)
 
     Is_Organizer (BOOLEAN)
 
-2. SPORT (Tabella dizionario per le discipline)
+2. SPORT (Lookup table for sports disciplines)
 
     ID_Sport (PK, INT, Auto-increment)
 
-    Nome_Sport (VARCHAR)
+    Sport_Name (VARCHAR)
 
-    Giocatori_Default (INT)
+    Default_Players (INT)
 
-3. VENUE (Impianti e luoghi di gioco)
+3. VENUE (Facilities and playing locations)
 
     ID_Venue (PK, INT, Auto-increment)
 
-    Nome_Struttura (VARCHAR)
+    Facility_Name (VARCHAR)
 
-    Indirizzo (VARCHAR)
+    Address (VARCHAR)
 
-    Latitudine (DECIMAL/DOUBLE)
+    Latitude (DECIMAL/DOUBLE)
 
-    Longitudine (DECIMAL/DOUBLE)
+    Longitude (DECIMAL/DOUBLE)
 
-4. MATCH (La partita creata, assorbe le relazioni 1:N)
+4. MATCH (Created match, absorbs 1:N relationships)
 
     ID_Match (PK, INT, Auto-increment)
 
-    Data (DATE)
+    Date (DATE)
 
-    Ora_Inizio (TIME)
+    Start_Time (TIME)
 
-    Ora_Fine (TIME)
+    End_Time (TIME)
 
-    Posti_Totali (INT)
+    Total_Slots (INT)
 
-    Posti_Mancanti (INT)
+    Available_Slots (INT)
 
-    Quota_Persona (DECIMAL)
+    Price_Per_Person (DECIMAL)
 
-    Stato_Match (ENUM: 'OPEN', 'FULL', 'CANCELLED', 'COMPLETED')
+    Match_Status (ENUM: 'OPEN', 'FULL', 'CANCELLED', 'COMPLETED')
 
-    ID_Organizer (FK) -> Riferimento a USER(ID_User)
+    ID_Organizer (FK) -> References USER(ID_User)
 
-    ID_Sport (FK) -> Riferimento a SPORT(ID_Sport)
+    ID_Sport (FK) -> References SPORT(ID_Sport)
 
-    ID_Venue (FK) -> Riferimento a VENUE(ID_Venue)
+    ID_Venue (FK) -> References VENUE(ID_Venue)
 
-5. JOIN_REQUEST (Tabella ponte che risolve la relazione N:M "Richiede_Iscrizione")
+5. JOIN_REQUEST (Bridge table resolving the N:M "Registration_Request" relationship)
 
     ID_Request (PK, INT, Auto-increment)
 
-    Data_Richiesta (DATETIME)
+    Request_Date (DATETIME)
 
-    Stato_Richiesta (ENUM: 'PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED')
+    Request_Status (ENUM: 'PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED')
 
-    ID_Player (FK) -> Riferimento a USER(ID_User)
+    ID_Player (FK) -> References USER(ID_User)
 
-    ID_Match (FK) -> Riferimento a MATCH(ID_Match)
+    ID_Match (FK) -> References MATCH(ID_Match)

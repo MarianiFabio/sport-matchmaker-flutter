@@ -6,7 +6,7 @@ skinparam state {
   ArrowColor #2C3E50
 }
 
-title State Machine Diagram: Lifecycle of a Match in SportMatch
+title State Machine Diagram: Lifecycle of a Match
 
 [*] --> OPEN : Organizer creates match
 
@@ -29,11 +29,11 @@ state CANCELLED {
 OPEN --> FULL : Player joins\n[available_places == 0]
 FULL --> OPEN : Player leaves (Leave Match)\n[available_places > 0]
 
-OPEN --> CANCELLED : Organizer cancels match
-FULL --> CANCELLED : Organizer cancels match
+OPEN -left-> CANCELLED : Organizer cancels match
+FULL -left-> CANCELLED : Organizer cancels match
 
-OPEN --> COMPLETED : Match date & time passed
-FULL --> COMPLETED : Match date & time passed
+OPEN -right-> COMPLETED : Match date & time passed
+FULL -right-> COMPLETED : Match date & time passed
 
 CANCELLED --> [*]
 COMPLETED --> [*]
