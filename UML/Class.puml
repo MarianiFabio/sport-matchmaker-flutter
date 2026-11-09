@@ -2,7 +2,7 @@
 skinparam classAttributeIconSize 0
 skinparam roundcorner 10
 
-' --- ENUMERAZIONI ---
+' --- ENUMS ---
 enum MatchStatus {
   OPEN
   FULL
@@ -17,16 +17,16 @@ enum RequestStatus {
   CANCELLED
 }
 
-' --- CLASSI PRINCIPALI (CON EREDITARIETÀ) ---
+' --- MAIN CLASSES (WITH INHERITANCE) ---
 abstract class User {
   - idUser: Integer
-  - nome: String
-  - cognome: String
+  - firstName: String
+  - lastName: String
   - email: String
   - passwordHash: String
   - username: String
   - karmaScore: Integer
-  - livelloAbilita: String
+  - skillLevel: String
   + authenticate(): Boolean
   + updateProfile(): void
 }
@@ -44,48 +44,48 @@ class Organizer {
   + reviewRequest(req: JoinRequest, isAccepted: Boolean): void
 }
 
-' Ereditarietà
+' Inheritance
 User <|-- Player
 User <|-- Organizer
 
-' --- CLASSI DI DOMINIO ---
+' --- DOMAIN CLASSES ---
 class Match {
   - idMatch: Integer
-  - data: Date
-  - oraInizio: Time
-  - oraFine: Time
-  - postiTotali: Integer
-  - postiMancanti: Integer
-  - quotaPersona: Float
-  - statoMatch: MatchStatus
+  - date: Date
+  - startTime: Time
+  - endTime: Time
+  - totalSpots: Integer
+  - availableSpots: Integer
+  - pricePerPerson: Float
+  - matchStatus: MatchStatus
   + updateSpots(): void
   + getDetails(): String
 }
 
 class Sport {
   - idSport: Integer
-  - nomeSport: String
-  - giocatoriDefault: Integer
+  - sportName: String
+  - defaultPlayers: Integer
 }
 
 class Venue {
   - idVenue: Integer
-  - nomeStruttura: String
-  - indirizzo: String
-  - latitudine: Double
-  - longitudine: Double
+  - facilityName: String
+  - address: String
+  - latitude: Double
+  - longitude: Double
   + getLocation(): String
 }
 
-' --- CLASSE INTERMEDIA (Risoluzione N:M) ---
+' --- INTERMEDIATE CLASS (N:M Resolution) ---
 class JoinRequest {
   - idRequest: Integer
-  - dataRichiesta: DateTime
-  - statoRichiesta: RequestStatus
+  - requestDate: DateTime
+  - requestStatus: RequestStatus
   + updateStatus(newStatus: RequestStatus): void
 }
 
-' --- RELAZIONI E CARDINALITÀ ---
+' --- RELATIONSHIPS AND CARDINALITY ---
 Organizer "1" --> "*" Match : creates >
 Match "*" -right-> "1" Sport : belongs to >
 Match "*" -right-> "1" Venue : takes place at >
