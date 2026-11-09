@@ -80,7 +80,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              // Filtri rapidi per sport
+              // Filtri basati sul tag Sport_Category
               children: [
                 FilterChip(
                   label: const Text('All Sports'),
@@ -90,20 +90,26 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('Football'),
-                  selected: _selectedFilter == 'foot',
-                  onSelected: (_) => setState(() => _selectedFilter = 'foot'),
+                  selected: _selectedFilter == 'Football',
+                  onSelected: (_) => setState(() => _selectedFilter = 'Football'),
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('Basketball'),
-                  selected: _selectedFilter == 'bask',
-                  onSelected: (_) => setState(() => _selectedFilter = 'bask'),
+                  selected: _selectedFilter == 'Basketball',
+                  onSelected: (_) => setState(() => _selectedFilter = 'Basketball'),
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
-                  label: const Text('Padel/Tennis'),
-                  selected: _selectedFilter == 'padel',
-                  onSelected: (_) => setState(() => _selectedFilter = 'padel'),
+                  label: const Text('Padel / Tennis'),
+                  selected: _selectedFilter == 'Racket',
+                  onSelected: (_) => setState(() => _selectedFilter = 'Racket'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Volleyball'),
+                  selected: _selectedFilter == 'Volleyball',
+                  onSelected: (_) => setState(() => _selectedFilter = 'Volleyball'),
                 ),
               ],
             ),
@@ -146,7 +152,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 final matches = _selectedFilter == 'All'
                     ? allMatches
                     : allMatches
-                    .where((m) => m.sport.toLowerCase().contains(_selectedFilter))
+                    .where((m) => m.category.toLowerCase() == _selectedFilter.toLowerCase())
                     .toList();
 
                 if (matches.isEmpty) {

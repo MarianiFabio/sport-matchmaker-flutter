@@ -10,6 +10,20 @@ class CreateMatchScreen extends StatefulWidget {
 }
 
 class _CreateMatchScreenState extends State<CreateMatchScreen> {
+  // Mappa degli sport con il relativo numero di giocatori totali di default
+  static const Map<String, int> _sportCapacities = {
+    'Football 5v5': 10,
+    'Football 7v7': 14,
+    'Football 8v8': 16,
+    'Basketball 3v3': 6,
+    'Basketball 5v5': 10,
+    'Padel 2v2': 4,
+    'Tennis Singles 1v1': 2,
+    'Tennis Doubles 2v2': 4,
+    'Volleyball 6v6': 12,
+    'Beach Volley 2v2': 4,
+  };
+
   String _selectedSport = 'Football 5v5';
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _venueController = TextEditingController();
@@ -25,6 +39,8 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     return 'http://localhost/sportmatch/api.php';
   }
 
+  int get _currentTotalPlayers => _sportCapacities[_selectedSport] ?? 10;
+
   @override
   void dispose() {
     _descriptionController.dispose();
@@ -35,13 +51,12 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     super.dispose();
   }
 
-  // Invia i dati del form al server locale XAMPP per creare la partita nel DB
   Future<void> _publishMatch() async {
     setState(() => _isSubmitting = true);
 
     final String venue = _venueController.text.trim().isNotEmpty
         ? _venueController.text.trim()
-        : 'KTU Arena, Radvilėnų pl. 19';
+        : 'KTU Sports Center, Radvilėnų pl. 19';
     final String date = _dateController.text.trim().isNotEmpty
         ? _dateController.text.trim()
         : '15/11/2026';
@@ -68,10 +83,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Match published to the database!')),
+        SnackBar(
+          content: Text('$_selectedSport match published ($_currentTotalPlayers total slots)!'),
+        ),
       );
 
-      // Pulisce i campi dopo l'invio
       _descriptionController.clear();
       _venueController.clear();
       _dateController.clear();
@@ -98,20 +114,22 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tendina per scegliere lo sport
+            // Tendina con tutte le varianti di sport e capienza automatica
             DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Select Sport',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Select Sport & Format',
+                helperText: 'Default match capacity: $_currentTotalPlayers total players',
+                border: const OutlineInputBorder(),
               ),
               value: _selectedSport,
-              items: const [
-                DropdownMenuItem(value: 'Football 5v5', child: Text('Football 5v5')),
-                DropdownMenuItem(value: 'Basketball 3v3', child: Text('Basketball 3v3')),
-                DropdownMenuItem(value: 'Padel / Tennis', child: Text('Padel / Tennis')),
-                DropdownMenuItem(value: 'Volleyball', child: Text('Volleyball')),
-              ],
+              items: _sportCapacities.keys
+                  .map((sport) => DropdownMenuItem(
+                value: sport,
+                child: Text('$sport (${_sportCapacities[sport]} players)'),
+              ))
+                  .toList(),
               onChanged: (value) {
                 if (value != null) {
                   setState(() => _selectedSport = value);
@@ -169,11 +187,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             TextField(
               controller: _spotsController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Missing Players Needed',
+              decoration: InputDecoration(
+                labelText: 'Missing Players Needed (out of $_currentTotalPlayers)',
                 hintText: 'e.g., 2',
-                prefixIcon: Icon(Icons.group_add_outlined),
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.group_add_outlined),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 24),
