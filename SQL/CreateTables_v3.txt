@@ -1,0 +1,127 @@
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS JOIN_REQUEST;
+DROP TABLE IF EXISTS `MATCH`;
+DROP TABLE IF EXISTS VENUE;
+DROP TABLE IF EXISTS SPORT;
+DROP TABLE IF EXISTS USERS;
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE USERS (
+    ID_User INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Surname VARCHAR(100) NOT NULL,
+    Email VARCHAR(150) NOT NULL UNIQUE,
+    PasswordHash VARCHAR(255) NOT NULL,
+    Username VARCHAR(100) NOT NULL UNIQUE,
+    Bio VARCHAR(255) DEFAULT 'Sport enthusiast ready for the next match!',
+    City VARCHAR(100) DEFAULT 'Kaunas',
+    Phone VARCHAR(50) DEFAULT '+370 600 00000',
+    Karma_Score INT DEFAULT 100,
+    Ability_Level VARCHAR(50) DEFAULT 'Intermediate',
+    Favorite_Sports VARCHAR(255) DEFAULT 'Football,Padel,Basketball',
+    Is_Player BOOLEAN DEFAULT TRUE,
+    Is_Organizer BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE SPORT (
+    ID_Sport INT AUTO_INCREMENT PRIMARY KEY,
+    Sport_Name VARCHAR(100) NOT NULL,
+    Sport_Category VARCHAR(50) NOT NULL, -- Es. Football, Basketball, Padel...
+    Sport_Format VARCHAR(50) NOT NULL,   -- Es. 5v5, 7v7, 3v3...
+    Default_Players INT NOT NULL
+);
+
+CREATE TABLE VENUE (
+    ID_Venue INT AUTO_INCREMENT PRIMARY KEY,
+    Venue_Name VARCHAR(150) NOT NULL,
+    Address VARCHAR(255),
+    Latitude DECIMAL(10, 8),
+    Longitude DECIMAL(11, 8)
+);
+
+CREATE TABLE `MATCH` (
+    ID_Match INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(200) NOT NULL,
+    Date DATE NOT NULL,
+    Start_Time TIME NOT NULL,
+    End_Time TIME,
+    Total_Slots INT NOT NULL,
+    Remaining_Slots INT NOT NULL,
+    Fee_Per_Person DECIMAL(6, 2) DEFAULT 0.00,
+    Match_Status ENUM('OPEN', 'FULL', 'CANCELLED', 'COMPLETED') DEFAULT 'OPEN',
+    ID_Organizer INT NOT NULL,
+    ID_Sport INT NOT NULL,
+    ID_Venue INT NOT NULL,
+    FOREIGN KEY (ID_Organizer) REFERENCES USERS(ID_User) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Sport) REFERENCES SPORT(ID_Sport) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Venue) REFERENCES VENUE(ID_Venue) ON DELETE CASCADE
+);
+
+CREATE TABLE JOIN_REQUEST (
+    ID_Request INT AUTO_INCREMENT PRIMARY KEY,
+    Request_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Request_Status ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED') DEFAULT 'ACCEPTED',
+    ID_Player INT NOT NULL,
+    ID_Match INT NOT NULL,
+    FOREIGN KEY (ID_Player) REFERENCES USERS(ID_User) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Match) REFERENCES `MATCH`(ID_Match) ON DELETE CASCADE
+);
+
+-- POPOLAMENTO UTENTI REALI PER ROSTER E PROFILO
+INSERT INTO USERS (Name, Surname, Email, PasswordHash, Username, Bio, City, Phone, Karma_Score, Ability_Level, Favorite_Sports, Is_Player, Is_Organizer) VALUES
+('Fabio', 'Mariani', 'fabio@email.com', 'hash_psw', 'fabio_m', 'Erasmus student & football lover. Always looking for competitive 5v5 games!', 'Kaunas', '+39 333 1234567', 98, 'Advanced', 'Football,Padel,Basketball', TRUE, TRUE),
+('Luca', 'Bianchi', 'luca@email.com', 'hash_psw', 'lucab', 'Midfielder and Padel player.', 'Milano', '+39 340 9876543', 95, 'Intermediate', 'Football,Padel', TRUE, FALSE),
+('Andrea', 'Rossi', 'andrea@email.com', 'hash_psw', 'andrear', 'Basketball point guard.', 'Kaunas', '+370 611 22334', 92, 'Advanced', 'Basketball,Volleyball', TRUE, FALSE);
+
+-- POPOLAMENTO COMPLETO SPORT + FORMATI SEPARATI
+INSERT INTO SPORT (Sport_Name, Sport_Category, Sport_Format, Default_Players) VALUES
+-- Football
+('Football 5v5 (Futsal)', 'Football', '5v5 (Futsal)', 10),
+('Football 7v7', 'Football', '7v7', 14),
+('Football 8v8', 'Football', '8v8', 16),
+('Football 11v11', 'Football', '11v11 (Full Pitch)', 22),
+-- Basketball
+('Basketball 1v1', 'Basketball', '1v1 (Half Court)', 2),
+('Basketball 3v3', 'Basketball', '3v3 (Streetball)', 6),
+('Basketball 5v5', 'Basketball', '5v5 (Full Court)', 10),
+-- Padel
+('Padel 1v1', 'Padel', '1v1 (Singles)', 2),
+('Padel 2v2', 'Padel', '2v2 (Doubles)', 4),
+-- Tennis
+('Tennis 1v1', 'Tennis', '1v1 (Singles)', 2),
+('Tennis 2v2', 'Tennis', '2v2 (Doubles)', 4),
+-- Volleyball
+('Volleyball 6v6', 'Volleyball', '6v6 (Indoor)', 12),
+('Beach Volley 2v2', 'Volleyball', '2v2 (Beach)', 4),
+('Beach Volley 4v4', 'Volleyball', '4v4 (Beach)', 8),
+-- Badminton
+('Badminton 1v1', 'Badminton', '1v1 (Singles)', 2),
+('Badminton 2v2', 'Badminton', '2v2 (Doubles)', 4),
+-- Table Tennis
+('Table Tennis 1v1', 'Table Tennis', '1v1 (Singles)', 2),
+('Table Tennis 2v2', 'Table Tennis', '2v2 (Doubles)', 4),
+-- Rugby
+('Rugby 7s', 'Rugby', '7v7 (Sevens)', 14),
+('Touch Rugby 5v5', 'Rugby', '5v5 (Touch)', 10);
+
+INSERT INTO VENUE (Venue_Name, Address, Latitude, Longitude) VALUES
+('Centro Sportivo San Siro', 'Via Piccolomini 2, Milano', 45.478100, 9.123900),
+('KTU Sports Center', 'Radvilėnų pl. 19, Kaunas', 54.902700, 23.957500),
+('PlayMore Moscova', 'Via della Moscova 26, Milano', 45.477300, 9.189500),
+('Žalgiris Arena Court', 'Karaliaus Mindaugo pr. 50, Kaunas', 54.890200, 23.914500);
+
+INSERT INTO `MATCH` (Title, Date, Start_Time, End_Time, Total_Slots, Remaining_Slots, Fee_Per_Person, ID_Organizer, ID_Sport, ID_Venue) VALUES
+('Competitive 5v5 Evening Match', '2026-11-10', '20:00:00', '21:30:00', 10, 1, 7.50, 1, 1, 1),
+('Midweek 7v7 Friendly Game', '2026-11-11', '19:00:00', '20:30:00', 14, 3, 8.00, 1, 2, 3),
+('Intermediate Padel Doubles', '2026-11-12', '18:00:00', '19:30:00', 4, 2, 12.00, 1, 9, 1),
+('Streetball 3v3 Pickup Game', '2026-11-13', '17:30:00', '19:00:00', 6, 1, 0.00, 1, 6, 2),
+('Indoor Volleyball Mixed 6v6', '2026-11-14', '21:00:00', '22:30:00', 12, 4, 5.00, 1, 12, 4),
+('Sunday Morning Tennis Singles', '2026-11-15', '10:00:00', '11:30:00', 2, 1, 10.00, 2, 10, 2);
+
+-- POPOLAMENTO PARTECIPANTI REALI (così anche il Roster nel dettaglio arriva dal JSON!)
+INSERT INTO JOIN_REQUEST (ID_Player, ID_Match, Request_Status) VALUES
+(2, 1, 'ACCEPTED'),
+(3, 1, 'ACCEPTED'),
+(3, 2, 'ACCEPTED'),
+(2, 3, 'ACCEPTED'),
+(3, 4, 'ACCEPTED');

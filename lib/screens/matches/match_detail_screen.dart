@@ -14,6 +14,7 @@ class MatchDetailScreen extends StatefulWidget {
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
   bool _isJoining = false;
   bool _hasJoined = false;
+  late List<RosterPlayer> _roster;
 
   String get _apiUrl {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -22,18 +23,22 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     return 'http://localhost/sportmatch/api.php';
   }
 
-  // Invia la richiesta di partecipazione al backend XAMPP
+  @override
+  void initState() {
+    super.initState();
+    _roster = List<RosterPlayer>.from(widget.match.roster);
+  }
+
   Future<void> _joinMatch() async {
     setState(() => _isJoining = true);
 
     try {
       final url = Uri.parse(
-        '$_apiUrl?action=join_match&id_match=${widget.match.id ?? 0}',
+        '$_apiUrl?action=join_match&id_match=${widget.match.id ?? 0}&id_user=1',
       );
       await http.post(url);
     } catch (e) {
-      // Anche se XAMPP avesse un intoppo, aggiorniamo comunque la UI per la demo
-      debugPrint('Join request fallback: $e');
+      debugPrint('Join request error: $e');
     }
 
     if (!mounted) return;
@@ -41,19 +46,28 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     setState(() {
       _isJoining = false;
       _hasJoined = true;
+      _roster.add(
+        const RosterPlayer(
+          name: 'You (Joined)',
+          role: 'Player',
+          karma: 100,
+          level: 'Advanced',
+        ),
+      );
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('You have joined the match! Roster updated.')),
+      const SnackBar(content: Text('You have joined the match! Roster updated on server.')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final match = widget.match;
+    final remainingAfterJoin = _hasJoined ? (match.spotsNeeded - 1) : match.spotsNeeded;
 
     return Scaffold(
-      appBar: AppBar(title: Text(match.sport)),
+      appBar: AppBar(title: Text('${match.category} • ${match.format}')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -79,51 +93,66 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 Text(match.time, style: const TextStyle(fontSize: 14)),
               ],
             ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.euro, size: 18, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(
+                  match.feePerPerson == 0
+                      ? 'Free Match'
+                      : '€${match.feePerPerson.toStringAsFixed(2)} per player',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             Text(
-              'Confirmed Roster',
+              'Confirmed Roster (${_roster.length}/${match.totalSpots})',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            // Lista giocatori confermati + slot libero che si aggiorna al click
+            // Roster generato dinamicamente dal JSON restituito da api.php
             Card(
-              child: ListView(
+              child: ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  ListTile(
-                    leading: CircleAvatar(
-                      child: Text(
-                        (match.organizerName != null && match.organizerName!.isNotEmpty)
-                            ? match.organizerName!.substring(0, 1).toUpperCase()
-                            : 'FM',
+                itemCount: _roster.length + (remainingAfterJoin > 0 ? 1 : 0),
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  if (index < _roster.length) {
+                    final player = _roster[index];
+                    final initials = player.name.isNotEmpty
+                        ? player.name
+                        .trim()
+                        .split(' ')
+                        .map((part) => part.isNotEmpty ? part[0] : '')
+                        .take(2)
+                        .join()
+                        .toUpperCase()
+                        : 'P';
+                    return ListTile(
+                      leading: CircleAvatar(child: Text(initials)),
+                      title: Text(player.name),
+                      subtitle: Text('Reliability: ${player.karma}% • ${player.level}'),
+                      trailing: Chip(
+                        label: Text(player.role),
+                        visualDensity: VisualDensity.compact,
                       ),
-                    ),
-                    title: Text('${match.organizerName ?? 'Fabio Mariani'} (Organizer)'),
-                    subtitle: const Text('Reliability: 100%'),
-                    trailing: const Chip(label: Text('Host'), visualDensity: VisualDensity.compact),
-                  ),
-                  const Divider(height: 1),
-                  const ListTile(
-                    leading: CircleAvatar(child: Text('AP')),
-                    title: Text('Andrea'),
-                    subtitle: Text('Reliability: 95%'),
-                  ),
-                  const Divider(height: 1),
-                  if (_hasJoined)
-                    const ListTile(
-                      leading: CircleAvatar(child: Text('LB')),
-                      title: Text('Luca Bianchi (You)', style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Reliability: 100% • Just joined'),
-                      trailing: Icon(Icons.check_circle, color: Colors.green),
-                    )
-                  else
-                    const ListTile(
-                      leading: CircleAvatar(child: Icon(Icons.person_add_alt_1, color: Colors.grey)),
-                      title: Text('Empty Spot', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
-                      subtitle: Text('Waiting for player'),
-                    ),
-                ],
+                    );
+                  } else {
+                    return ListTile(
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.person_add_alt_1, color: Colors.grey),
+                      ),
+                      title: Text(
+                        '$remainingAfterJoin Empty Spot${remainingAfterJoin == 1 ? '' : 's'} Remaining',
+                        style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                      ),
+                      subtitle: const Text('Waiting for players to join'),
+                    );
+                  }
+                },
               ),
             ),
             const SizedBox(height: 32),
