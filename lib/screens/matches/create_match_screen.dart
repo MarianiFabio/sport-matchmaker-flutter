@@ -26,11 +26,16 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   final TextEditingController _feeController = TextEditingController();
   bool _isSubmitting = false;
 
+  // String get _apiUrl {
+  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  //     return 'http://10.0.2.2/sportmatch/api.php';
+  //   }
+  //   return 'http://localhost/sportmatch/api.php';
+  // }
+
   String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
+    // URL pubblico così funziona sia sul mio PC che su quello del professore!
+    return 'http://sportmatch-fabio.atwebpages.com/api.php';
   }
 
   @override
