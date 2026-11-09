@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-// classe per i dati delle partite, niente roba complessa
-// cosi mi basta passare sto oggetto tra le varie view
+// Modello dati per rappresentare una singola partita tra le varie schermate
 class MatchItem {
   final int? id;
   final String sport;
@@ -25,77 +24,67 @@ class MatchItem {
     this.organizerName,
   });
 
-  /// Factory constructor per mappare il JSON restituito dall'API PHP (XAMPP)
-  /// sia con SELECT * FROM `MATCH` sia con eventuale JOIN su SPORT, VENUE e USER.
+  // Costruttore factory per convertire il JSON dell'API PHP in un oggetto MatchItem
   factory MatchItem.fromJson(Map<String, dynamic> json) {
-    final int? sportId = json['ID_Sport'] != null || json['id_sport'] != null
-        ? _parseInt(json['ID_Sport'] ?? json['id_sport'])
+    final int? sportId = json['id_sport'] != null || json['ID_Sport'] != null
+        ? _parseInt(json['id_sport'] ?? json['ID_Sport'])
         : null;
 
-    final String sportName = (json['Sport'] ??
-            json['Nome_Sport'] ??
-            json['sport_name'] ??
-            json['sport'] ??
-            _sportNameFromId(sportId))
+    final String sportName = (json['sport_name'] ??
+        json['Sport_Name'] ??
+        json['sport'] ??
+        _sportNameFromId(sportId))
         .toString();
 
     final String datePart =
-        (json['Data'] ?? json['match_date'] ?? json['date'] ?? '').toString();
+    (json['match_date'] ?? json['Date'] ?? json['date'] ?? '').toString();
     final String timePart =
-        (json['Ora'] ?? json['Orario'] ?? json['match_time'] ?? json['time'] ?? '')
-            .toString();
+    (json['match_time'] ?? json['Start_Time'] ?? json['time'] ?? '')
+        .toString();
     final String formattedTime = timePart.isNotEmpty && datePart.isNotEmpty
         ? '$datePart, $timePart'
         : (datePart.isNotEmpty ? datePart : timePart);
 
     final int needed = _parseInt(
-      json['Posti_Mancanti'] ?? json['spots_needed'] ?? json['spotsNeeded'],
+      json['spots_needed'] ?? json['Remaining_Slots'] ?? json['spotsNeeded'],
       defaultValue: 1,
     );
     final int total = _parseInt(
-      json['Posti_Totali'] ??
-          json['Max_Giocatori'] ??
-          json['total_spots'] ??
-          json['max_players'],
+      json['total_spots'] ?? json['Total_Slots'] ?? json['totalSpots'],
       defaultValue: 10,
     );
 
-    final dynamic rawVenueId = json['ID_Venue'] ?? json['ID_Campo'] ?? json['id_venue'];
-    final String venueName = (json['Campo'] ??
-            json['Nome_Campo'] ??
-            json['Luogo'] ??
-            json['venue_name'] ??
-            json['venue'] ??
-            (rawVenueId != null ? 'Campo #$rawVenueId' : 'Campo Sportivo'))
+    final dynamic rawVenueId = json['id_venue'] ?? json['ID_Venue'];
+    final String venueName = (json['venue_name'] ??
+        json['Venue_Name'] ??
+        json['venue'] ??
+        (rawVenueId != null ? 'Venue #$rawVenueId' : 'Sports Center'))
         .toString();
 
-    final String matchTitle = (json['Titolo'] ??
-            json['Descrizione'] ??
-            json['Note'] ??
-            json['title'] ??
-            json['description'] ??
-            'Cercasi $needed giocator${needed == 1 ? 'e' : 'i'} per $sportName')
+    final String matchTitle = (json['title'] ??
+        json['description'] ??
+        'Looking for $needed player${needed == 1 ? '' : 's'} for $sportName')
         .toString();
 
     return MatchItem(
-      id: _parseInt(json['ID_Match'] ?? json['id_match'] ?? json['id'], defaultValue: 0),
+      id: _parseInt(json['id_match'] ?? json['ID_Match'] ?? json['id'], defaultValue: 0),
       sport: sportName,
       title: matchTitle,
       venue: venueName,
-      time: formattedTime.isNotEmpty ? formattedTime : 'Orario da definire',
+      time: formattedTime.isNotEmpty ? formattedTime : 'Time TBD',
       spotsNeeded: needed,
       totalSpots: total,
       icon: _iconForSport(sportName),
       organizerName:
-          (json['Organizzatore'] ?? json['organizer_name'] ?? json['organizer'])?.toString(),
+      (json['organizer_name'] ?? json['Organizer_Name'] ?? json['organizer'])?.toString(),
     );
   }
 
   static String _sportNameFromId(int? id) {
     return switch (id) {
       1 => 'Football 5v5',
-      2 => 'Basketball 3v3',
-      3 => 'Padel / Tennis',
+      2 => 'Padel / Tennis',
+      3 => 'Basketball 3v3',
       4 => 'Volleyball',
       _ => 'Sport Match',
     };
@@ -109,13 +98,13 @@ class MatchItem {
 
   static IconData _iconForSport(String sport) {
     final s = sport.toLowerCase();
-    if (s.contains('calc') || s.contains('foot') || s.contains('soccer')) {
+    if (s.contains('foot') || s.contains('soccer')) {
       return Icons.sports_soccer;
-    } else if (s.contains('bask') || s.contains('pallacanestro')) {
+    } else if (s.contains('bask')) {
       return Icons.sports_basketball;
     } else if (s.contains('padel') || s.contains('tenn')) {
       return Icons.sports_tennis;
-    } else if (s.contains('voll') || s.contains('pallavolo')) {
+    } else if (s.contains('voll')) {
       return Icons.sports_volleyball;
     }
     return Icons.sports;

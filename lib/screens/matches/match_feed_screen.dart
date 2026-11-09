@@ -14,6 +14,7 @@ class MatchFeedScreen extends StatefulWidget {
 
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
   late Future<List<MatchItem>> _matchesFuture;
+  String _selectedFilter = 'All';
 
   @override
   void initState() {
@@ -21,9 +22,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _matchesFuture = fetchMatches();
   }
 
-  /// Restituisce l'URL corretto in base alla piattaforma:
-  /// - Emulatore Android -> 10.0.2.2
-  /// - Web (Chrome/Edge) o Desktop (Windows/macOS) -> localhost
+  // Seleziona automaticamente l'indirizzo IP corretto per emulatore Android o Web/Desktop
   String get _apiUrl {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2/sportmatch/api.php';
@@ -32,8 +31,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Future<List<MatchItem>> fetchMatches() async {
-    final url = Uri.parse(_apiUrl);
-
+    final url = Uri.parse('$_apiUrl?action=get_matches');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -41,19 +39,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       if (decoded is Map && decoded.containsKey('error')) {
         throw Exception(decoded['error']);
       }
-      // Qui i dati del database diventano una lista di MatchItem tipizzati
-      final List<dynamic> data = decoded as List<dynamic>;
 
-      debugPrint('Partite caricate dal DB locale: ${data.length}');
-      for (final match in data) {
-        debugPrint('${match['Data']} - Posti mancanti: ${match['Posti_Mancanti']}');
-      }
+      final List<dynamic> data = decoded as List<dynamic>;
+      debugPrint('Loaded matches from local DB: ${data.length}');
 
       return data
           .map((jsonItem) => MatchItem.fromJson(jsonItem as Map<String, dynamic>))
           .toList();
     } else {
-      throw Exception('Errore del server: ${response.statusCode}');
+      throw Exception('Server error: ${response.statusCode}');
     }
   }
 
@@ -71,7 +65,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Ricarica partite',
+            tooltip: 'Refresh matches',
             onPressed: _refreshMatches,
           ),
           IconButton(
@@ -86,15 +80,31 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              // filtri finti, per ora fanno solo scena all'esame
+              // Filtri rapidi per sport
               children: [
-                FilterChip(label: const Text('All Sports'), selected: true, onSelected: (_) {}),
+                FilterChip(
+                  label: const Text('All Sports'),
+                  selected: _selectedFilter == 'All',
+                  onSelected: (_) => setState(() => _selectedFilter = 'All'),
+                ),
                 const SizedBox(width: 8),
-                FilterChip(label: const Text('Football'), selected: false, onSelected: (_) {}),
+                FilterChip(
+                  label: const Text('Football'),
+                  selected: _selectedFilter == 'foot',
+                  onSelected: (_) => setState(() => _selectedFilter = 'foot'),
+                ),
                 const SizedBox(width: 8),
-                FilterChip(label: const Text('Basketball'), selected: false, onSelected: (_) {}),
+                FilterChip(
+                  label: const Text('Basketball'),
+                  selected: _selectedFilter == 'bask',
+                  onSelected: (_) => setState(() => _selectedFilter = 'bask'),
+                ),
                 const SizedBox(width: 8),
-                FilterChip(label: const Text('Padel/Tennis'), selected: false, onSelected: (_) {}),
+                FilterChip(
+                  label: const Text('Padel/Tennis'),
+                  selected: _selectedFilter == 'padel',
+                  onSelected: (_) => setState(() => _selectedFilter = 'padel'),
+                ),
               ],
             ),
           ),
@@ -102,12 +112,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             child: FutureBuilder<List<MatchItem>>(
               future: _matchesFuture,
               builder: (context, snapshot) {
-                // 1. Stato di caricamento
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                // 2. Stato di errore (es. XAMPP spento o errore HTTP)
                 if (snapshot.hasError) {
                   return Center(
                     child: Padding(
@@ -118,7 +126,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                           const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
                           const SizedBox(height: 12),
                           Text(
-                            'Impossibile connettersi a XAMPP:\n${snapshot.error}',
+                            'Unable to connect to local server:\n${snapshot.error}',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.grey[700]),
                           ),
@@ -126,7 +134,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                           FilledButton.icon(
                             onPressed: _refreshMatches,
                             icon: const Icon(Icons.refresh),
-                            label: const Text('Riprova'),
+                            label: const Text('Retry'),
                           ),
                         ],
                       ),
@@ -134,16 +142,19 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                   );
                 }
 
-                final matches = snapshot.data ?? [];
+                final allMatches = snapshot.data ?? [];
+                final matches = _selectedFilter == 'All'
+                    ? allMatches
+                    : allMatches
+                    .where((m) => m.sport.toLowerCase().contains(_selectedFilter))
+                    .toList();
 
-                // 3. Stato lista vuota
                 if (matches.isEmpty) {
                   return const Center(
-                    child: Text('Nessuna partita disponibile nel database.'),
+                    child: Text('No matches available for this category.'),
                   );
                 }
 
-                // 4. Stato con dati caricati: mantiene esattamente il layout Card originale
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: matches.length,
@@ -153,14 +164,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          // apre la pagina del dettaglio della singola partita
-                          Navigator.push(
+                        onTap: () async {
+                          // Apre il dettaglio e, al ritorno, aggiorna la lista dal DB
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => MatchDetailScreen(match: match),
                             ),
                           );
+                          _refreshMatches();
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -186,12 +198,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      // un po' di colore per farlo saltare all'occhio
                                       color: Colors.amber[100],
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      '${match.spotsNeeded} spot left',
+                                      '${match.spotsNeeded} spot${match.spotsNeeded == 1 ? '' : 's'} left',
                                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber[900], fontSize: 12),
                                     ),
                                   ),

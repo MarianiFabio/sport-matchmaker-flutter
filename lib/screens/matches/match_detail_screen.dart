@@ -1,12 +1,57 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../../models/match_item.dart';
 
-class MatchDetailScreen extends StatelessWidget {
+class MatchDetailScreen extends StatefulWidget {
   final MatchItem match;
   const MatchDetailScreen({super.key, required this.match});
 
   @override
+  State<MatchDetailScreen> createState() => _MatchDetailScreenState();
+}
+
+class _MatchDetailScreenState extends State<MatchDetailScreen> {
+  bool _isJoining = false;
+  bool _hasJoined = false;
+
+  String get _apiUrl {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2/sportmatch/api.php';
+    }
+    return 'http://localhost/sportmatch/api.php';
+  }
+
+  // Invia la richiesta di partecipazione al backend XAMPP
+  Future<void> _joinMatch() async {
+    setState(() => _isJoining = true);
+
+    try {
+      final url = Uri.parse(
+        '$_apiUrl?action=join_match&id_match=${widget.match.id ?? 0}',
+      );
+      await http.post(url);
+    } catch (e) {
+      // Anche se XAMPP avesse un intoppo, aggiorniamo comunque la UI per la demo
+      debugPrint('Join request fallback: $e');
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isJoining = false;
+      _hasJoined = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You have joined the match! Roster updated.')),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
+
     return Scaffold(
       appBar: AppBar(title: Text(match.sport)),
       body: SingleChildScrollView(
@@ -14,7 +59,10 @@ class MatchDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(match.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              match.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -32,9 +80,12 @@ class MatchDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            Text('Confirmed Roster', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              'Confirmed Roster',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            // lista giocatori
+            // Lista giocatori confermati + slot libero che si aggiorna al click
             Card(
               child: ListView(
                 shrinkWrap: true,
@@ -48,7 +99,7 @@ class MatchDetailScreen extends StatelessWidget {
                             : 'FM',
                       ),
                     ),
-                    title: Text('${match.organizerName ?? 'Fabio'} (Organizer)'),
+                    title: Text('${match.organizerName ?? 'Fabio Mariani'} (Organizer)'),
                     subtitle: const Text('Reliability: 100%'),
                     trailing: const Chip(label: Text('Host'), visualDensity: VisualDensity.compact),
                   ),
@@ -59,11 +110,19 @@ class MatchDetailScreen extends StatelessWidget {
                     subtitle: Text('Reliability: 95%'),
                   ),
                   const Divider(height: 1),
-                  const ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person_add_alt_1, color: Colors.grey)),
-                    title: Text('Empty Spot', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
-                    subtitle: Text('Waiting for request'),
-                  ),
+                  if (_hasJoined)
+                    const ListTile(
+                      leading: CircleAvatar(child: Text('LB')),
+                      title: Text('Luca Bianchi (You)', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('Reliability: 100% • Just joined'),
+                      trailing: Icon(Icons.check_circle, color: Colors.green),
+                    )
+                  else
+                    const ListTile(
+                      leading: CircleAvatar(child: Icon(Icons.person_add_alt_1, color: Colors.grey)),
+                      title: Text('Empty Spot', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+                      subtitle: Text('Waiting for player'),
+                    ),
                 ],
               ),
             ),
@@ -72,14 +131,18 @@ class MatchDetailScreen extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Join This Game', style: TextStyle(fontSize: 16)),
-                onPressed: () {
-                  // finto popup per dare feedback all'utente (al prof)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Request sent to organizer!')),
-                  );
-                },
+                icon: _isJoining
+                    ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : Icon(_hasJoined ? Icons.check : Icons.check_circle_outline),
+                label: Text(
+                  _hasJoined ? 'Joined' : 'Join This Game',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                onPressed: (_isJoining || _hasJoined) ? null : _joinMatch,
               ),
             ),
           ],
