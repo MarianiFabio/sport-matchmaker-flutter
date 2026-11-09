@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,6 +13,66 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
+  bool _isSubmitting = false;
+
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _emailController =
+  TextEditingController(text: 'fabio@email.com');
+  final TextEditingController _passwordController =
+  TextEditingController(text: 'password123');
+
+  String get _apiUrl {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2/sportmatch/api.php';
+    }
+    return 'http://localhost/sportmatch/api.php';
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Esegue Login o Sign Up comunicando con il backend XAMPP
+  Future<void> _submitAuth() async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final action = _isLogin ? 'login' : 'register';
+      final response = await http.post(
+        Uri.parse('$_apiUrl?action=$action'),
+        body: {
+          'full_name': _fullNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body) as Map<String, dynamic>;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text((decoded['message'] ?? 'Authenticated!').toString())),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Auth server notice: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationScreen(),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +95,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   _isLogin ? 'Welcome Back!' : 'Create an Account',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -45,8 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
                 if (!_isLogin) ...[
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: _fullNameController,
+                    decoration: const InputDecoration(
                       labelText: 'Full Name',
                       prefixIcon: Icon(Icons.person_outline),
                       border: OutlineInputBorder(),
@@ -54,18 +118,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                const TextField(
+                TextField(
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const TextField(
+                TextField(
+                  controller: _passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Password',
                     prefixIcon: Icon(Icons.lock_outline),
                     border: OutlineInputBorder(),
@@ -73,16 +139,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () {
-                    // Accede all'app aprendo la schermata principale
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MainNavigationScreen(),
-                      ),
-                    );
-                  },
-                  child: Text(_isLogin ? 'Sign In' : 'Sign Up'),
+                  onPressed: _isSubmitting ? null : _submitAuth,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                      : Text(_isLogin ? 'Sign In' : 'Sign Up'),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
