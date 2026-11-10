@@ -41,17 +41,17 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _matchesFuture = fetchMatches();
   }
 
-  // String get _apiUrl {
-  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-  //     return 'http://10.0.2.2/sportmatch/api.php';
-  //   }
-  //   return 'http://localhost/sportmatch/api.php';
-  // }
-
   String get _apiUrl {
-    // URL pubblico
-    return 'http://sportmatch-fabio.atwebpages.com/api.php';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2/sportmatch/api.php';
+    }
+    return 'http://localhost/sportmatch/api.php';
   }
+
+  // String get _apiUrl {
+  //   // URL pubblico
+  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
+  // }
 
   Future<List<MatchItem>> fetchMatches() async {
     final url = Uri.parse('$_apiUrl?action=get_matches');
