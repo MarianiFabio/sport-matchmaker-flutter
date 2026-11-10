@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // }
 
   String get _apiUrl {
-    // URL pubblico così funziona sia sul mio PC che su quello del professore!
+    // URL pubblico
     return 'http://sportmatch-fabio.atwebpages.com/api.php';
   }
 
