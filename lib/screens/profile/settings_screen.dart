@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../auth/login_screen.dart';
+import '../../models/match_item.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,17 +18,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkMode = false;
   bool _isLoading = true;
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
+  // String get _apiUrl {
+  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  //     return 'http://10.0.2.2/sportmatch/api.php';
+  //   }
+  //   return 'http://localhost/sportmatch/api.php';
+  // }
 
   // String get _apiUrl {
   //   // URL pubblico
   //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
   // }
+
+  String get _apiUrl => UserSession.apiUrl;
 
   @override
   void initState() {
@@ -38,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Legge lo stato attuale delle impostazioni dal JSON del profilo
   Future<void> _loadSettingsFromServer() async {
     try {
-      final response = await http.get(Uri.parse('$_apiUrl?action=get_profile&id_user=1'));
+      final response = await http.get(Uri.parse('$_apiUrl?action=get_profile&id_user=${UserSession.currentUserId}'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         if (mounted) {
@@ -61,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await http.post(
         Uri.parse('$_apiUrl?action=update_settings'),
         body: {
-          'id_user': '1',
+          'id_user': '${UserSession.currentUserId}',
           'push_notifications': _pushNotifications ? '1' : '0',
           'match_reminders': _matchReminders ? '1' : '0',
           'dark_mode': _darkMode ? '1' : '0',

@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../models/match_item.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic>? initialProfile;
@@ -44,26 +44,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'Pro / Competitive',
   ];
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
-
-  // String get _apiUrl {
-  //   // URL pubblico
-  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
-  // }
-
   @override
   void initState() {
     super.initState();
     final p = widget.initialProfile ?? {};
-    _nameController = TextEditingController(text: (p['name'] ?? 'Fabio').toString());
-    _surnameController = TextEditingController(text: (p['surname'] ?? 'Mariani').toString());
-    _usernameController = TextEditingController(text: (p['username'] ?? 'fabio_m').toString());
-    _emailController = TextEditingController(text: (p['email'] ?? 'fabio@email.com').toString());
+    _nameController = TextEditingController(text: (p['name'] ?? UserSession.name).toString());
+    _surnameController = TextEditingController(text: (p['surname'] ?? UserSession.surname).toString());
+    _usernameController = TextEditingController(text: (p['username'] ?? UserSession.username).toString());
+    _emailController = TextEditingController(text: (p['email'] ?? UserSession.email).toString());
     _bioController = TextEditingController(text: (p['bio'] ?? '').toString());
     _cityController = TextEditingController(text: (p['city'] ?? 'Kaunas').toString());
     _phoneController = TextEditingController(text: (p['phone'] ?? '+39 333 1234567').toString());
@@ -96,11 +84,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final url = Uri.parse('$_apiUrl?action=update_profile');
+      final url = Uri.parse('${UserSession.apiUrl}?action=update_profile');
       final response = await http.post(
         url,
         body: {
-          'id_user': '1',
+          'id_user': UserSession.currentUserId.toString(),
           'name': _nameController.text.trim(),
           'surname': _surnameController.text.trim(),
           'username': _usernameController.text.trim(),
@@ -118,8 +106,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        // Aggiorna subito anche la sessione in memoria così la Home filtra con i nuovi preferiti!
+        UserSession.name = _nameController.text.trim();
+        UserSession.surname = _surnameController.text.trim();
+        UserSession.username = _usernameController.text.trim();
+        UserSession.email = _emailController.text.trim();
+        UserSession.abilityLevel = _abilityLevel;
+        UserSession.favoriteSports = _selectedFavoriteSports.toList();
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile & preferences saved to server!')),
+          const SnackBar(content: Text('Profile & favorite sports updated!')),
         );
         Navigator.pop(context, true);
       } else {
@@ -239,7 +235,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Favorite Sports',
+              'Favorite Sports (Used to filter Home Feed)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),

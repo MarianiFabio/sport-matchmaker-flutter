@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/match_item.dart';
@@ -15,15 +14,16 @@ class MatchFeedScreen extends StatefulWidget {
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
   late Future<List<MatchItem>> _matchesFuture;
 
-  // Stati dei filtri
-  String _selectedCategory = 'All';
+  // Di default parte filtrando automaticamente sugli Sport Preferiti dell'utente loggato!
+  String _selectedCategory = 'Favorites';
   String _selectedFormat = 'All';
   String _searchQuery = '';
   DateTime? _selectedDate;
-  String _selectedTimeSlot = 'Any'; // Any, Morning, Afternoon, Evening
+  String _selectedTimeSlot = 'Any';
   bool _onlyFreeMatches = false;
 
   final List<String> _sportCategories = const [
+    'Favorites',
     'All',
     'Football',
     'Basketball',
@@ -41,20 +41,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _matchesFuture = fetchMatches();
   }
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
-
-  // String get _apiUrl {
-  //   // URL pubblico
-  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
-  // }
-
   Future<List<MatchItem>> fetchMatches() async {
-    final url = Uri.parse('$_apiUrl?action=get_matches');
+    final url = Uri.parse('${UserSession.apiUrl}?action=get_matches');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -92,7 +80,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Future<void> _pickFilterDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime(2026, 11, 10),
+      initialDate: _selectedDate ?? DateTime(2026, 11, 18),
       firstDate: DateTime(2025),
       lastDate: DateTime(2028),
     );
@@ -101,7 +89,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     }
   }
 
-  // Apre il pannello dei filtri avanzati (Data, Fascia Oraria, Gratis)
   void _openAdvancedFiltersSheet() {
     showModalBottomSheet(
       context: context,
@@ -176,20 +163,27 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  // Applica tutti i filtri attivi sulla lista di partite
   List<MatchItem> _applyFilters(List<MatchItem> allMatches) {
+    final favLower = UserSession.favoriteSports.map((s) => s.toLowerCase()).toSet();
+
     return allMatches.where((m) {
-      // 1. Filtro Sport (Category)
-      if (_selectedCategory != 'All' &&
+      // 1. Filtro Sport Preferiti (attivo di default!) oppure Sport specifico
+      if (_selectedCategory == 'Favorites') {
+        if (favLower.isNotEmpty && !favLower.contains(m.category.toLowerCase())) {
+          return false;
+        }
+      } else if (_selectedCategory != 'All' &&
           m.category.toLowerCase() != _selectedCategory.toLowerCase()) {
         return false;
       }
-      // 2. Filtro Formato (5v5, 7v7...)
+
+      // 2. Filtro Formato
       if (_selectedFormat != 'All' &&
           m.format.toLowerCase() != _selectedFormat.toLowerCase()) {
         return false;
       }
-      // 3. Filtro Ricerca Testuale (titolo, campo, sport, organizzatore)
+
+      // 3. Filtro Ricerca Testuale
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final matchesText = m.title.toLowerCase().contains(q) ||
@@ -198,6 +192,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             (m.organizerName?.toLowerCase().contains(q) ?? false);
         if (!matchesText) return false;
       }
+
       // 4. Filtro Data
       if (_selectedDate != null) {
         final y = _selectedDate!.year.toString();
@@ -209,6 +204,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
           return false;
         }
       }
+
       // 5. Filtro Fascia Oraria
       if (_selectedTimeSlot != 'Any' && m.kickOffTime.contains(':')) {
         final hour = int.tryParse(m.kickOffTime.split(':').first) ?? 20;
@@ -216,6 +212,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         if (_selectedTimeSlot == 'Afternoon' && (hour < 12 || hour >= 18)) return false;
         if (_selectedTimeSlot == 'Evening' && hour < 18) return false;
       }
+
       // 6. Filtro Partite Gratuite
       if (_onlyFreeMatches && m.feePerPerson > 0) {
         return false;
@@ -228,7 +225,16 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Available Matches', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Available Matches', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              'Logged in as ${UserSession.fullName}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
@@ -249,7 +255,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ),
       body: Column(
         children: [
-          // Barra di ricerca per campo, titolo o città
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: TextField(
@@ -269,16 +274,19 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             ),
           ),
 
-          // Riga 1: Filtri per Sport (Category)
+          // Riga 1: Chip di filtro con "My Favorites" al primo posto
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: _sportCategories.map((category) {
+                final String label = category == 'Favorites'
+                    ? 'My Favorites'
+                    : (category == 'All' ? 'All Sports' : category);
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(category == 'All' ? 'All Sports' : category),
+                    label: Text(label),
                     selected: _selectedCategory == category,
                     onSelected: (_) {
                       setState(() {
@@ -292,7 +300,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             ),
           ),
 
-          // Badge dei filtri extra attivi (Data, Fascia Oraria, Gratis)
           if (_selectedDate != null || _selectedTimeSlot != 'Any' || _onlyFreeMatches)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -356,8 +363,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
                 final allMatches = snapshot.data ?? [];
 
-                // Estrae dinamicamente i formati disponibili per lo sport selezionato
-                final availableFormats = _selectedCategory == 'All'
+                final availableFormats = (_selectedCategory == 'All' || _selectedCategory == 'Favorites')
                     ? <String>[]
                     : allMatches
                     .where((m) => m.category.toLowerCase() == _selectedCategory.toLowerCase())
@@ -370,7 +376,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
                 return Column(
                   children: [
-                    // Riga 2 (Dinamica): Filtri per Formato (es. 5v5, 7v7) quando uno sport è selezionato
                     if (availableFormats.length > 1)
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -403,11 +408,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('No matches match your current filters.'),
+                            const Text('No matches found for the selected filter.'),
                             const SizedBox(height: 8),
-                            TextButton(
+                            FilledButton.tonal(
                               onPressed: _resetAllFilters,
-                              child: const Text('Clear all filters'),
+                              child: const Text('Show All Sports'),
                             ),
                           ],
                         ),
@@ -455,7 +460,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                                               ),
                                               Text(
-                                                match.venue,
+                                                '${match.venue} • Host: ${match.organizerName ?? "Organizer"}',
                                                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
                                               ),
                                             ],
@@ -493,7 +498,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                                           ],
                                         ),
                                         Text(
-                                          '${match.totalSpots - match.spotsNeeded}/${match.totalSpots} Players • ${match.feePerPerson == 0 ? 'Free' : '€${match.feePerPerson.toStringAsFixed(2)}'}',
+                                          '${match.roster.length}/${match.totalSpots} Joined • ${match.feePerPerson == 0 ? 'Free' : '€${match.feePerPerson.toStringAsFixed(2)}'}',
                                           style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                                         ),
                                       ],

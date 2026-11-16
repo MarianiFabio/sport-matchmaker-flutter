@@ -26,17 +26,19 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   final TextEditingController _feeController = TextEditingController();
   bool _isSubmitting = false;
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
+  // String get _apiUrl {
+  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  //     return 'http://10.0.2.2/sportmatch/api.php';
+  //   }
+  //   return 'http://localhost/sportmatch/api.php';
+  // }
 
   // String get _apiUrl {
   //   // URL pubblico
   //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
   // }
+
+  String get _apiUrl => UserSession.apiUrl;
 
   @override
   void initState() {
@@ -144,6 +146,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       await http.post(
         url,
         body: {
+          'id_organizer': UserSession.currentUserId.toString(),
           'id_sport': _selectedFormatOption!.idSport.toString(),
           'sport_category': _selectedFormatOption!.category,
           'sport_format': _selectedFormatOption!.format,

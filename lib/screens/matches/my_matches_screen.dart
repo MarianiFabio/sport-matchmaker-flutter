@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
+import '../../models/match_item.dart';
 class MyMatchesScreen extends StatefulWidget {
   const MyMatchesScreen({super.key});
 
@@ -16,17 +16,19 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
+  // String get _apiUrl {
+  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  //     return 'http://10.0.2.2/sportmatch/api.php';
+  //   }
+  //   return 'http://localhost/sportmatch/api.php';
+  // }
 
   // String get _apiUrl {
   //   // URL pubblico
   //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
   // }
+
+  String get _apiUrl => UserSession.apiUrl;
 
   @override
   void initState() {
@@ -42,7 +44,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     });
 
     try {
-      final url = Uri.parse('$_apiUrl?action=get_my_matches&id_user=1');
+      final url = Uri.parse('$_apiUrl?action=get_my_matches&id_user=${UserSession.currentUserId}');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -78,7 +80,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   Future<void> _leaveMatch(int matchId) async {
     try {
       await http.post(
-        Uri.parse('$_apiUrl?action=leave_match&id_match=$matchId&id_user=1'),
+        Uri.parse('$_apiUrl?action=leave_match&id_match=$matchId&id_user=${UserSession.currentUserId}'),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../models/match_item.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -17,25 +17,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
-
-  // String get _apiUrl {
-  //   // URL pubblico
-  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
-  // }
-
   @override
   void initState() {
     super.initState();
     _loadProfile();
   }
 
-  // Carica i dati del profilo dal JSON di XAMPP senza usare FutureBuilder
   Future<void> _loadProfile() async {
     setState(() {
       _isLoading = true;
@@ -43,11 +30,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      final url = Uri.parse('$_apiUrl?action=get_profile&id_user=1');
+      final url = Uri.parse(
+        '${UserSession.apiUrl}?action=get_profile&id_user=${UserSession.currentUserId}',
+      );
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body) as Map<String, dynamic>;
+        // Sincronizza anche la sessione in memoria (es. sport preferiti)
+        UserSession.updateFromJson(decoded);
+
         if (mounted) {
           setState(() {
             _userData = decoded;
@@ -237,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Favorite Sports',
+              'Favorite Sports (Auto-filters Home Feed)',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
