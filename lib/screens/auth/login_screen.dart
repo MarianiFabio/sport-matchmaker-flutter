@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../models/match_item.dart';
 import '../main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,18 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController =
   TextEditingController(text: 'password123');
 
-  String get _apiUrl {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2/sportmatch/api.php';
-    }
-    return 'http://localhost/sportmatch/api.php';
-  }
-
-  // String get _apiUrl {
-  //   // URL pubblico
-  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
-  // }
-
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -41,42 +29,80 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Esegue Login o Sign Up comunicando con il backend XAMPP
+  // Esegue il vero Login o Registrazione con controllo passwordHash sul DB XAMPP
   Future<void> _submitAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final fullName = _fullNameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (!_isLogin && fullName.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields.')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final action = _isLogin ? 'login' : 'register';
       final response = await http.post(
-        Uri.parse('$_apiUrl?action=$action'),
+        Uri.parse('${UserSession.apiUrl}?action=$action'),
         body: {
-          'full_name': _fullNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text,
+          'full_name': fullName,
+          'email': email,
+          'password': password,
         },
       );
 
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body) as Map<String, dynamic>;
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text((decoded['message'] ?? 'Authenticated!').toString())),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Auth server notice: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
+      final decoded = json.decode(response.body) as Map<String, dynamic>;
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && decoded['success'] == true) {
+        // Salva i dati dell'utente loggato (inclusi i suoi sport preferiti!) nella sessione
+        UserSession.updateFromJson(decoded);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((decoded['message'] ?? 'Authenticated!').toString())),
+        );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const MainNavigationScreen(),
           ),
         );
+      } else {
+        // Mostra l'errore reale (es. password errata o email già esistente)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red[700],
+            content: Text((decoded['error'] ?? 'Authentication failed').toString()),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red[700],
+          content: Text('Cannot connect to XAMPP server: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  void _fillDemoUser(String email) {
+    setState(() {
+      _isLogin = true;
+      _emailController.text = email;
+      _passwordController.text = 'password123';
+    });
   }
 
   @override
@@ -116,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _fullNameController,
                     decoration: const InputDecoration(
-                      labelText: 'Full Name',
+                      labelText: 'Full Name (Name & Surname)',
                       prefixIcon: Icon(Icons.person_outline),
                       border: OutlineInputBorder(),
                     ),
@@ -143,15 +169,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isSubmitting ? null : _submitAuth,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                      : Text(_isLogin ? 'Sign In' : 'Sign Up'),
+                SizedBox(
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: _isSubmitting ? null : _submitAuth,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                        : Text(_isLogin ? 'Sign In' : 'Sign Up', style: const TextStyle(fontSize: 16)),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -166,6 +195,36 @@ class _LoginScreenState extends State<LoginScreen> {
                         : 'Already have an account? Sign in',
                   ),
                 ),
+                if (_isLogin) ...[
+                  const Divider(height: 32),
+                  const Text(
+                    'Quick Demo Switch (Password: password123)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    children: [
+                      ActionChip(
+                        avatar: const Icon(Icons.person, size: 16),
+                        label: const Text('Fabio'),
+                        onPressed: () => _fillDemoUser('fabio@email.com'),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.person, size: 16),
+                        label: const Text('Luca'),
+                        onPressed: () => _fillDemoUser('luca@email.com'),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.person, size: 16),
+                        label: const Text('Andrea'),
+                        onPressed: () => _fillDemoUser('andrea@email.com'),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

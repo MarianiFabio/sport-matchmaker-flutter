@@ -1,25 +1,88 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-// Modello per ogni giocatore nel roster della partita (caricato dal JSON del server)
+// Gestisce la sessione dell'utente attualmente loggato e l'URL di localhost
+class UserSession {
+  static int currentUserId = 1;
+  static String name = 'Fabio';
+  static String surname = 'Mariani';
+  static String email = 'fabio@email.com';
+  static String username = 'fabio_m';
+  static String abilityLevel = 'Advanced';
+  static int karmaScore = 98;
+  static List<String> favoriteSports = ['Football', 'Padel', 'Basketball'];
+
+  static String get fullName => '$name $surname'.trim();
+
+  // URL dinamico per localhost (10.0.2.2 su Emulatore Android, localhost su Web/Desktop)
+  static String get apiUrl {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2/sportmatch/api.php';
+    }
+    return 'http://localhost/sportmatch/api.php';
+  }
+
+  // Aggiorna la sessione con il JSON restituito da login, register o get_profile
+  static void updateFromJson(Map<String, dynamic> json) {
+    if (json['id_user'] != null) {
+      currentUserId = int.tryParse(json['id_user'].toString()) ?? currentUserId;
+    }
+    if (json['name'] != null) name = json['name'].toString();
+    if (json['surname'] != null) surname = json['surname'].toString();
+    if (json['email'] != null) email = json['email'].toString();
+    if (json['username'] != null) username = json['username'].toString();
+    if (json['ability_level'] != null) abilityLevel = json['ability_level'].toString();
+    if (json['karma_score'] != null) {
+      karmaScore = int.tryParse(json['karma_score'].toString()) ?? karmaScore;
+    }
+    if (json['favorite_sports'] is List) {
+      favoriteSports = (json['favorite_sports'] as List)
+          .map((e) => e.toString())
+          .toList();
+    }
+  }
+}
+
+// Modello per ogni giocatore nel roster della partita (con dati profilo per il popup)
 class RosterPlayer {
+  final int idUser;
   final String name;
+  final String username;
   final String role;
   final int karma;
   final String level;
+  final String bio;
+  final String city;
+  final List<String> favoriteSports;
 
   const RosterPlayer({
+    required this.idUser,
     required this.name,
+    required this.username,
     required this.role,
     required this.karma,
     required this.level,
+    this.bio = '',
+    this.city = 'Kaunas',
+    this.favoriteSports = const [],
   });
 
   factory RosterPlayer.fromJson(Map<String, dynamic> json) {
+    final String favRaw = (json['favorite_sports'] ?? '').toString();
+    final List<String> favs = favRaw.isEmpty
+        ? []
+        : favRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
     return RosterPlayer(
+      idUser: int.tryParse((json['id_user'] ?? '0').toString()) ?? 0,
       name: (json['name'] ?? 'Player').toString(),
+      username: (json['username'] ?? 'player').toString(),
       role: (json['role'] ?? 'Player').toString(),
       karma: int.tryParse((json['karma'] ?? '100').toString()) ?? 100,
       level: (json['level'] ?? 'Intermediate').toString(),
+      bio: (json['bio'] ?? 'Sport enthusiast ready to play!').toString(),
+      city: (json['city'] ?? 'Kaunas').toString(),
+      favoriteSports: favs,
     );
   }
 }
@@ -53,13 +116,14 @@ class SportFormatOption {
 
 class MatchItem {
   final int? id;
+  final int organizerId;
   final String sport;
   final String category;
   final String format;
   final String title;
   final String venue;
   final String date;
-  final String rawDate; // YYYY-MM-DD per filtrare per data
+  final String rawDate;
   final String kickOffTime;
   final String time;
   final int spotsNeeded;
@@ -71,6 +135,7 @@ class MatchItem {
 
   const MatchItem({
     this.id,
+    required this.organizerId,
     required this.sport,
     required this.category,
     required this.format,
@@ -120,6 +185,7 @@ class MatchItem {
 
     return MatchItem(
       id: _parseInt(json['id_match'], defaultValue: 0),
+      organizerId: _parseInt(json['id_organizer'], defaultValue: 1),
       sport: sportName,
       category: sportCategory,
       format: sportFormat,

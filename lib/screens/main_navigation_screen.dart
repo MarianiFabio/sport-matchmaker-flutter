@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'matches/match_feed_screen.dart';
+import 'matches/my_matches_screen.dart';
 import 'matches/create_match_screen.dart';
 import 'profile/profile_screen.dart';
 
@@ -13,9 +14,9 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  // elenco delle pagine da far girare con la bottom bar
   final List<Widget> _pages = const [
     MatchFeedScreen(),
+    MyMatchesScreen(),
     CreateMatchScreen(),
     ProfileScreen(),
   ];
@@ -26,7 +27,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: _pages[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        // qui gestisco quale tab l'utente ha tappato
         onDestinationSelected: (int index) {
           setState(() {
             _currentIndex = index;
@@ -35,7 +35,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.sports_soccer),
-            label: 'Matches',
+            label: 'Feed',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.event_available_outlined),
+            label: 'My Matches',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
