@@ -1,17 +1,23 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-// Gestisce la sessione dell'utente attualmente loggato e l'URL di localhost
+// Gestisce la sessione dell'utente loggato, le preferenze e le coordinate di ricerca geografica
 class UserSession {
   static int currentUserId = 1;
   static String name = 'Fabio';
   static String surname = 'Mariani';
   static String email = 'fabio@email.com';
   static String username = 'fabio_m';
-  static String city = 'Kaunas'; // Città dell'utente per il filtro geografico
+  static String city = 'Kaunas';
   static String abilityLevel = 'Advanced';
   static int karmaScore = 98;
   static List<String> favoriteSports = ['Football', 'Padel', 'Basketball'];
+
+  // Punto geografico di riferimento scelto dall'utente (Default: Kaunas KTU Campus)
+  static double searchLat = 54.9027;
+  static double searchLng = 23.9575;
+  static String searchLocationLabel = 'KTU Campus, Kaunas';
 
   static String get fullName => '$name $surname'.trim();
 
@@ -30,8 +36,17 @@ class UserSession {
     if (json['surname'] != null) surname = json['surname'].toString();
     if (json['email'] != null) email = json['email'].toString();
     if (json['username'] != null) username = json['username'].toString();
-    if (json['city'] != null && json['city'].toString().isNotEmpty) {
+    if (json['city'] != null) {
       city = json['city'].toString();
+      if (city.toLowerCase().contains('milan')) {
+        searchLat = 45.4773;
+        searchLng = 9.1895;
+        searchLocationLabel = 'Milano Center';
+      } else {
+        searchLat = 54.9027;
+        searchLng = 23.9575;
+        searchLocationLabel = 'KTU Campus, Kaunas';
+      }
     }
     if (json['ability_level'] != null) abilityLevel = json['ability_level'].toString();
     if (json['karma_score'] != null) {
@@ -45,7 +60,6 @@ class UserSession {
   }
 }
 
-// Modello per ogni giocatore nel roster della partita (con dati profilo per il popup)
 class RosterPlayer {
   final int idUser;
   final String name;
@@ -89,7 +103,6 @@ class RosterPlayer {
   }
 }
 
-// Modello per ogni opzione di Sport + Formato restituita da api.php?action=get_sports
 class SportFormatOption {
   final int idSport;
   final String sportName;
@@ -124,6 +137,8 @@ class MatchItem {
   final String format;
   final String title;
   final String venue;
+  final double latitude;
+  final double longitude;
   final String date;
   final String rawDate;
   final String kickOffTime;
@@ -143,6 +158,8 @@ class MatchItem {
     required this.format,
     required this.title,
     required this.venue,
+    required this.latitude,
+    required this.longitude,
     required this.date,
     required this.rawDate,
     required this.kickOffTime,
@@ -154,6 +171,31 @@ class MatchItem {
     this.organizerName,
     this.roster = const [],
   });
+
+  // Calcola la distanza in linea d'aria (in km) tra il punto scelto dall'utente e il campo della partita (Formula di Haversine)
+  double distanceFromUserKm() {
+    return calculateDistanceKm(
+      UserSession.searchLat,
+      UserSession.searchLng,
+      latitude,
+      longitude,
+    );
+  }
+
+  static double calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadiusKm = 6371.0;
+    final double dLat = _degToRad(lat2 - lat1);
+    final double dLon = _degToRad(lon2 - lon1);
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degToRad(lat1)) *
+            math.cos(_degToRad(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  static double _degToRad(double deg) => deg * (math.pi / 180.0);
 
   factory MatchItem.fromJson(Map<String, dynamic> json) {
     final String sportName = (json['sport_name'] ?? 'Sport Match').toString();
@@ -172,6 +214,9 @@ class MatchItem {
     final double fee = double.tryParse((json['fee_per_person'] ?? '0').toString()) ?? 0.0;
 
     final String venueName = (json['venue_name'] ?? 'Sports Center').toString();
+    final double lat = double.tryParse((json['venue_lat'] ?? '54.9027').toString()) ?? 54.9027;
+    final double lng = double.tryParse((json['venue_lng'] ?? '23.9575').toString()) ?? 23.9575;
+
     final String matchTitle = (json['title'] ??
         'Looking for $needed player${needed == 1 ? '' : 's'} for $sportName')
         .toString();
@@ -193,6 +238,8 @@ class MatchItem {
       format: sportFormat,
       title: matchTitle,
       venue: venueName,
+      latitude: lat,
+      longitude: lng,
       date: datePart,
       rawDate: rawDatePart,
       kickOffTime: timePart,

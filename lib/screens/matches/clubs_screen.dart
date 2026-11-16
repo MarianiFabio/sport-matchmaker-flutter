@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/match_item.dart';
 
-// 1. SCHERMATA PRINCIPALE: LISTA CHAT DEI CLUB IN STILE WHATSAPP
 class ClubsScreen extends StatefulWidget {
   const ClubsScreen({super.key});
 
@@ -15,6 +14,16 @@ class _ClubsScreenState extends State<ClubsScreen> {
   List _allClubs = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  String _selectedSportFilter = 'All';
+
+  static const List<String> _sportFilters = [
+    'All',
+    'Football',
+    'Basketball',
+    'Padel',
+    'Tennis',
+    'Volleyball',
+  ];
 
   @override
   void initState() {
@@ -65,6 +74,85 @@ class _ClubsScreenState extends State<ClubsScreen> {
     }
   }
 
+  Future<void> _declineInvite(Map<String, dynamic> club) async {
+    await http.post(
+      Uri.parse('${UserSession.apiUrl}?action=leave_club'),
+      body: {
+        'id_club': club['id_club'].toString(),
+        'id_user': UserSession.currentUserId.toString(),
+      },
+    );
+    _loadClubs();
+  }
+
+  // Dialog per entrare in un Club (anche privato!) tramite Codice Invito
+  void _showJoinByCodeDialog() {
+    final codeCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Join Club via Invite Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the club code shared by your friend (e.g., VOLLEY-VIP or KTU-5V5):',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Invite Code',
+                hintText: 'e.g., VOLLEY-VIP',
+                prefixIcon: Icon(Icons.key),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final code = codeCtrl.text.trim();
+              if (code.isEmpty) return;
+              Navigator.pop(ctx);
+              final response = await http.post(
+                Uri.parse('${UserSession.apiUrl}?action=join_club_by_code'),
+                body: {
+                  'invite_code': code,
+                  'id_user': UserSession.currentUserId.toString(),
+                },
+              );
+              if (!mounted) return;
+              final decoded = json.decode(response.body) as Map<String, dynamic>;
+              if (decoded['success'] == true) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text((decoded['message'] ?? 'Joined!').toString())),
+                );
+                _loadClubs();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: Colors.red[700],
+                    content: Text((decoded['error'] ?? 'Invalid code').toString()),
+                  ),
+                );
+              }
+            },
+            child: const Text('Join Club'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openClubChat(Map<String, dynamic> club) async {
     await Navigator.push(
       context,
@@ -73,6 +161,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
           idClub: club['id_club'] as int,
           clubName: club['club_name'].toString(),
           sportCategory: club['sport_category'].toString(),
+          inviteCode: (club['invite_code'] ?? 'CLUB').toString(),
           memberCount: club['member_count'] as int,
         ),
       ),
@@ -84,6 +173,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String selectedSport = 'Football';
+    bool isPrivateClub = false;
 
     showModalBottomSheet(
       context: context,
@@ -148,7 +238,15 @@ class _ClubsScreenState extends State<ClubsScreen> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Private Club (Invite or Code Only)'),
+                    subtitle: const Text('Only invited players or users with code can join'),
+                    value: isPrivateClub,
+                    onChanged: (val) => setModalState(() => isPrivateClub = val),
+                  ),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     height: 46,
@@ -165,6 +263,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                             'club_name': name,
                             'description': descCtrl.text.trim(),
                             'sport_category': selectedSport,
+                            'is_private': isPrivateClub ? '1' : '0',
                             'id_user': UserSession.currentUserId.toString(),
                             'user_name': UserSession.fullName,
                           },
@@ -173,7 +272,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                         final decoded = json.decode(response.body) as Map<String, dynamic>;
                         if (decoded['success'] == true) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Club "$name" created!')),
+                            SnackBar(content: Text((decoded['message'] ?? 'Club created!').toString())),
                           );
                           _loadClubs();
                         } else {
@@ -196,20 +295,33 @@ class _ClubsScreenState extends State<ClubsScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _allClubs.where((c) {
+      if (_selectedSportFilter != 'All' &&
+          c['sport_category'].toString().toLowerCase() != _selectedSportFilter.toLowerCase()) {
+        return false;
+      }
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
       return c['club_name'].toString().toLowerCase().contains(q) ||
           c['sport_category'].toString().toLowerCase().contains(q) ||
-          c['description'].toString().toLowerCase().contains(q);
+          c['description'].toString().toLowerCase().contains(q) ||
+          (c['invite_code'] ?? '').toString().toLowerCase().contains(q);
     }).toList();
 
+    final invitedClubs = filtered.where((c) => c['is_invited'] == true).toList();
     final myClubs = filtered.where((c) => c['is_member'] == true).toList();
-    final discoverClubs = filtered.where((c) => c['is_member'] != true).toList();
+    final discoverClubs = filtered
+        .where((c) => c['is_member'] != true && c['is_invited'] != true)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Clubs & Chats', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          TextButton.icon(
+            onPressed: _showJoinByCodeDialog,
+            icon: const Icon(Icons.key, size: 18),
+            label: const Text('Join by Code'),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadClubs,
@@ -224,15 +336,37 @@ class _ClubsScreenState extends State<ClubsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: 'Search clubs or sports...',
+                hintText: 'Search clubs by name, sport or invite code...',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => setState(() => _searchQuery = ''),
+                )
+                    : null,
                 isDense: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: _sportFilters.map((sp) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(sp == 'All' ? 'All Sports' : sp),
+                    selected: _selectedSportFilter == sp,
+                    onSelected: (_) => setState(() => _selectedSportFilter = sp),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           Expanded(
@@ -241,7 +375,57 @@ class _ClubsScreenState extends State<ClubsScreen> {
                 : ListView(
               padding: const EdgeInsets.only(bottom: 80),
               children: [
-                // SEZIONE 1: I MIEI CLUB (Stile lista chat WhatsApp)
+                // SEZIONE 0: INVITI RICEVUTI DALL'UTENTE LOGGATO
+                if (invitedClubs.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                    child: Text(
+                      '📩 PENDING CLUB INVITATIONS (${invitedClubs.length})',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber[900],
+                      ),
+                    ),
+                  ),
+                  ...invitedClubs.map((club) {
+                    return Card(
+                      color: Colors.amber[50],
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.amber,
+                          child: Icon(Icons.mail_outline, color: Colors.white),
+                        ),
+                        title: Text(
+                          club['club_name'].toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          'You were invited! • ${club['sport_category']} • Code: ${club['invite_code']}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              tooltip: 'Decline',
+                              onPressed: () => _declineInvite(club),
+                            ),
+                            FilledButton(
+                              onPressed: () => _joinClub(club),
+                              child: const Text('Accept'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                ],
+
+                // SEZIONE 1: I MIEI CLUB (Lista stile WhatsApp)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: Text(
@@ -256,7 +440,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                 if (myClubs.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(16.0),
-                    child: Text('You have not joined any clubs yet. Join one below or create a new club!'),
+                    child: Text('You have not joined any clubs yet. Accept an invite or join below!'),
                   )
                 else
                   ...myClubs.map((club) {
@@ -307,11 +491,11 @@ class _ClubsScreenState extends State<ClubsScreen> {
 
                 const SizedBox(height: 16),
 
-                // SEZIONE 2: ESPLORA ALTRI CLUB A CUI UNIRSI
+                // SEZIONE 2: ESPLORA E CERCA ALTRI CLUB
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: Text(
-                    'DISCOVER CLUBS TO JOIN (${discoverClubs.length})',
+                    'DISCOVER & SEARCH CLUBS (${discoverClubs.length})',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -322,11 +506,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
                 if (discoverClubs.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(16.0),
-                    child: Text('You are already a member of all available clubs!'),
+                    child: Text('No other clubs match your search.'),
                   )
                 else
                   ...discoverClubs.map((club) {
                     final sport = club['sport_category'].toString();
+                    final isPrivate = club['is_private'] == true;
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       child: ListTile(
@@ -334,15 +519,28 @@ class _ClubsScreenState extends State<ClubsScreen> {
                           backgroundColor: Colors.grey[200],
                           child: Icon(MatchItem.iconForCategory(sport), color: Colors.teal),
                         ),
-                        title: Text(
-                          club['club_name'].toString(),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                club['club_name'].toString(),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            if (isPrivate)
+                              const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+                          ],
                         ),
                         subtitle: Text(
                           '${club['description']} • ${club['member_count']} members',
                           style: const TextStyle(fontSize: 12),
                         ),
-                        trailing: FilledButton.tonal(
+                        trailing: isPrivate
+                            ? OutlinedButton(
+                          onPressed: _showJoinByCodeDialog,
+                          child: const Text('Use Code'),
+                        )
+                            : FilledButton.tonal(
                           onPressed: () => _joinClub(club),
                           child: const Text('Join'),
                         ),
@@ -358,11 +556,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
   }
 }
 
-// 2. SCHERMATA INTERNA DELLA CHAT DEL SINGOLO CLUB (Con Sondaggi e Controllo Organizzatore)
+// SCHERMATA INTERNA DELLA CHAT DEL SINGOLO CLUB (Con Invito Giocatori + Sondaggi)
 class ClubChatScreen extends StatefulWidget {
   final int idClub;
   final String clubName;
   final String sportCategory;
+  final String inviteCode;
   final int memberCount;
 
   const ClubChatScreen({
@@ -370,6 +569,7 @@ class ClubChatScreen extends StatefulWidget {
     required this.idClub,
     required this.clubName,
     required this.sportCategory,
+    required this.inviteCode,
     required this.memberCount,
   });
 
@@ -436,6 +636,139 @@ class _ClubChatScreenState extends State<ClubChatScreen> {
     } catch (e) {
       debugPrint('Send message error: $e');
     }
+  }
+
+  // Apre il pannello per invitare un altro giocatore nel Club (o condividere l'Invite Code)
+  Future<void> _openInvitePlayerSheet() async {
+    final userCtrl = TextEditingController();
+    List allUsers = [];
+    try {
+      final res = await http.get(Uri.parse('${UserSession.apiUrl}?action=get_all_users'));
+      if (res.statusCode == 200) {
+        final list = json.decode(res.body) as List<dynamic>;
+        allUsers = list.map((e) => e as Map<String, dynamic>).toList();
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Invite Players to Club',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.key, size: 16),
+                    label: Text('Code: ${widget.inviteCode}'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: userCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Invite by Username or Email',
+                        hintText: 'e.g., lucab or andrea@email.com',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () async {
+                      final target = userCtrl.text.trim();
+                      if (target.isEmpty) return;
+                      Navigator.pop(ctx);
+                      await _sendDirectInvite(target);
+                    },
+                    child: const Text('Invite'),
+                  ),
+                ],
+              ),
+              if (allUsers.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Quick Invite Registered Players:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 180,
+                  child: ListView.builder(
+                    itemCount: allUsers.length,
+                    itemBuilder: (context, i) {
+                      final u = allUsers[i];
+                      if (u['id_user'] == UserSession.currentUserId) {
+                        return const SizedBox.shrink();
+                      }
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          child: Text(u['full_name'].toString().substring(0, 1)),
+                        ),
+                        title: Text('${u['full_name']} (@${u['username']})'),
+                        subtitle: Text('${u['city']} • ${u['level']}'),
+                        trailing: OutlinedButton.icon(
+                          icon: const Icon(Icons.send, size: 15),
+                          label: const Text('Send Invite'),
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await _sendDirectInvite(u['username'].toString());
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _sendDirectInvite(String targetUser) async {
+    final response = await http.post(
+      Uri.parse('${UserSession.apiUrl}?action=invite_to_club'),
+      body: {
+        'id_club': widget.idClub.toString(),
+        'target_user': targetUser,
+      },
+    );
+    if (!mounted) return;
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: decoded['success'] == true ? Colors.teal[700] : Colors.red[700],
+        content: Text((decoded['message'] ?? decoded['error'] ?? 'Done').toString()),
+      ),
+    );
   }
 
   Future<void> _leaveClub() async {
@@ -684,12 +1017,17 @@ class _ClubChatScreenState extends State<ClubChatScreen> {
           children: [
             Text(widget.clubName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Text(
-              '${widget.sportCategory} Club • ${widget.memberCount} members',
+              'Code: ${widget.inviteCode} • ${widget.memberCount} members',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_1),
+            tooltip: 'Invite Players',
+            onPressed: _openInvitePlayerSheet,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadClubFeed,

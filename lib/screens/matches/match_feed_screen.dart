@@ -14,24 +14,23 @@ class MatchFeedScreen extends StatefulWidget {
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
   late Future<List<MatchItem>> _matchesFuture;
 
-  // Modalità filtro sport:
-  // 'FAV_ALL' = tutti i miei sport preferiti
-  // 'ALL' = tutti gli sport dell'app
-  // 'CUSTOM' = insieme personalizzato di sport scelti in _customSelectedSports
+
   String _sportFilterMode = 'FAV_ALL';
   Set<String> _customSelectedSports = {};
   String _selectedFormat = 'All';
   String _searchQuery = '';
 
-  // Modalità filtro Data: 'UPCOMING' (da oggi in poi), 'SINGLE' (data singola), 'RANGE' (intervallo)
   String _dateMode = 'UPCOMING';
   DateTime? _singleDate;
   DateTimeRange? _dateRange;
 
-  // Modalità filtro Ora: 'ANY' (qualsiasi), 'FROM' (da un'ora in poi), 'RANGE' (intervallo orario)
   String _timeMode = 'ANY';
   int _fromHour = 18;
   RangeValues _hourRange = const RangeValues(17, 22);
+
+  // Filtro Geografico per Area e Raggio in linea d'aria (km)
+  bool _enableAreaFilter = false;
+  double _maxRadiusKm = 15.0;
 
   bool _onlyFreeMatches = false;
 
@@ -44,6 +43,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     'Badminton',
     'Table Tennis',
     'Rugby',
+  ];
+
+  // Punti geografici e indirizzi predefiniti selezionabili o spostabili sulla mappa interattiva
+  static const List _presetLocations = [
+  {'label': 'KTU Campus, Kaunas', 'lat': 54.9027, 'lng': 23.9575, 'city': 'Kaunas'},
+  {'label': 'Žalgiris Arena, Kaunas', 'lat': 54.8902, 'lng': 23.9145, 'city': 'Kaunas'},
+  {'label': 'Old Town / Santaka, Kaunas', 'lat': 54.8969, 'lng': 23.8860, 'city': 'Kaunas'},
+  {'label': 'San Siro Area, Milano', 'lat': 45.4781, 'lng': 9.1239, 'city': 'Milano'},
+  {'label': 'Moscova / Center, Milano', 'lat': 45.4773, 'lng': 9.1895, 'city': 'Milano'},
   ];
 
   @override
@@ -87,6 +95,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       _singleDate = null;
       _dateRange = null;
       _timeMode = 'ANY';
+      _enableAreaFilter = false;
+      _maxRadiusKm = 15.0;
       _onlyFreeMatches = false;
     });
   }
@@ -107,9 +117,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     return null;
   }
 
-  // PANNELLO FILTRI COMPLETO: Ricerca Sport Multipli, Date (Upcoming/Single/Range) e Orari (Any/From/Range)
   void _openAdvancedFiltersSheet() {
     String sportSearchText = '';
+    // Coordinate normalizzate del pin sulla mappa interattiva (0.0 .. 1.0)
+    double mapPinX = 0.5;
+    double mapPinY = 0.5;
 
     showModalBottomSheet(
       context: context,
@@ -151,8 +163,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
             return DraggableScrollableSheet(
               expand: false,
-              initialChildSize: 0.85,
-              maxChildSize: 0.92,
+              initialChildSize: 0.88,
+              maxChildSize: 0.94,
               minChildSize: 0.5,
               builder: (_, scrollController) {
                 return Padding(
@@ -184,7 +196,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                       ),
                       const Divider(),
 
-                      // SEZIONE 1: SPORT (Multi-selezione + Barra di ricerca + Preferiti in evidenza)
+                      // 1. SPORT MULTI-SELEZIONE CON RICERCA
                       const SizedBox(height: 8),
                       const Text(
                         '1. Sports (Select one or multiple sports)',
@@ -274,9 +286,164 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
                       const Divider(height: 28),
 
-                      // SEZIONE 2: DATA (Da adesso in poi, Data Singola, Intervallo di Date)
+                      // 2. FILTRO GEOGRAFICO: MAPPA INTERATTIVA + SCELTA PUNTO + RAGGIO KM
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              '2. Nearby Area & Radius Filter (GPS / Map)',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                          ),
+                          Switch(
+                            value: _enableAreaFilter,
+                            onChanged: (val) {
+                              setModalState(() => _enableAreaFilter = val);
+                              setState(() {});
+                            },
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Reference Point: ${UserSession.searchLocationLabel} (${UserSession.searchLat.toStringAsFixed(3)}, ${UserSession.searchLng.toStringAsFixed(3)})',
+                        style: TextStyle(fontSize: 12, color: Colors.teal[800], fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: _presetLocations.map((loc) {
+                          final isSelected = UserSession.searchLocationLabel == loc['label'];
+                          return ChoiceChip(
+                            avatar: const Icon(Icons.place_outlined, size: 15),
+                            label: Text(loc['label'].toString(), style: const TextStyle(fontSize: 12)),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setModalState(() {
+                                UserSession.searchLat = loc['lat'] as double;
+                                UserSession.searchLng = loc['lng'] as double;
+                                UserSession.searchLocationLabel = loc['label'].toString();
+                                _enableAreaFilter = true;
+                                mapPinX = 0.5;
+                                mapPinY = 0.5;
+                              });
+                              setState(() {});
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Mappa Radar Interattiva (Tocca un punto qualsiasi per spostare il centro di ricerca!)
+                      GestureDetector(
+                        onTapDown: (details) {
+                          const double mapWidth = 320;
+                          const double mapHeight = 150;
+                          final dx = (details.localPosition.dx / mapWidth).clamp(0.08, 0.92);
+                          final dy = (details.localPosition.dy / mapHeight).clamp(0.12, 0.88);
+                          setModalState(() {
+                            mapPinX = dx;
+                            mapPinY = dy;
+                            // Sposta dinamicamente le coordinate intorno all'area selezionata (~15km box)
+                            final baseLat = UserSession.searchLat;
+                            final baseLng = UserSession.searchLng;
+                            UserSession.searchLat = baseLat + (0.5 - dy) * 0.08;
+                            UserSession.searchLng = baseLng + (dx - 0.5) * 0.12;
+                            UserSession.searchLocationLabel =
+                            'Custom Map Point (${UserSession.searchLat.toStringAsFixed(3)}, ${UserSession.searchLng.toStringAsFixed(3)})';
+                            _enableAreaFilter = true;
+                          });
+                          setState(() {});
+                        },
+                        child: Container(
+                          height: 150,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6F2EF),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.teal.withValues(alpha: 0.4), width: 1.5),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: CustomPaint(
+                              painter: _RadarMapPainter(
+                                pinX: mapPinX,
+                                pinY: mapPinY,
+                                radiusKm: _maxRadiusKm,
+                                isEnabled: _enableAreaFilter,
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    top: 8,
+                                    left: 10,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.88),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'Tap anywhere on map to move search center pin',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 8,
+                                    right: 10,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal[800],
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        _enableAreaFilter
+                                            ? 'Radius: ${_maxRadiusKm.round()} km'
+                                            : 'Filter Off (Tap to enable)',
+                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_enableAreaFilter) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text('Max Distance: ', style: TextStyle(fontSize: 13)),
+                            Expanded(
+                              child: Slider(
+                                value: _maxRadiusKm,
+                                min: 1,
+                                max: 50,
+                                divisions: 49,
+                                label: '${_maxRadiusKm.round()} km',
+                                onChanged: (val) {
+                                  setModalState(() => _maxRadiusKm = val);
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            Text(
+                              '${_maxRadiusKm.round()} km',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      const Divider(height: 28),
+
+                      // 3. DATA
                       const Text(
-                        '2. Date Filter',
+                        '3. Date Filter',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       const SizedBox(height: 8),
@@ -349,9 +516,9 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
                       const Divider(height: 28),
 
-                      // SEZIONE 3: ORARIO (Qualsiasi, Da un'ora in poi, Intervallo di ore)
+                      // 4. ORARIO
                       const Text(
-                        '3. Kickoff Time Filter',
+                        '4. Kickoff Time Filter',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       const SizedBox(height: 8),
@@ -444,7 +611,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                         value: _onlyFreeMatches,
                         onChanged: (val) {
                           setModalState(() => _onlyFreeMatches = val);
-                          setState(() => _onlyFreeMatches = val);
+                          setState(() {});
                         },
                       ),
                       const SizedBox(height: 16),
@@ -473,7 +640,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     final customLower = _customSelectedSports.map((s) => s.toLowerCase()).toSet();
 
     return allMatches.where((m) {
-      // 1. Filtro Sport (Tutti i preferiti, Tutti gli sport, oppure Selezione Multipla Custom)
       final catLower = m.category.toLowerCase();
       if (_sportFilterMode == 'FAV_ALL') {
         if (favLower.isNotEmpty && !favLower.contains(catLower)) return false;
@@ -481,13 +647,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         if (customLower.isNotEmpty && !customLower.contains(catLower)) return false;
       }
 
-      // 2. Filtro Formato
       if (_selectedFormat != 'All' &&
           m.format.toLowerCase() != _selectedFormat.toLowerCase()) {
         return false;
       }
 
-      // 3. Filtro Ricerca Testuale
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final matchesText = m.title.toLowerCase().contains(q) ||
@@ -497,7 +661,12 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         if (!matchesText) return false;
       }
 
-      // 4. Filtro Data (Upcoming, Single Date, Date Range)
+      // Filtro Distanza in linea d'aria (Haversine)
+      if (_enableAreaFilter) {
+        final distKm = m.distanceFromUserKm();
+        if (distKm > _maxRadiusKm) return false;
+      }
+
       final matchDateObj = _parseRawDate(m.rawDate.isNotEmpty ? m.rawDate : m.date);
       if (matchDateObj != null) {
         final dOnly = DateTime(matchDateObj.year, matchDateObj.month, matchDateObj.day);
@@ -511,7 +680,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         }
       }
 
-      // 5. Filtro Orario (Any, From Hour onwards, Hour Range)
       if (_timeMode != 'ANY' && m.kickOffTime.contains(':')) {
         final parts = m.kickOffTime.split(':');
         final hour = int.tryParse(parts[0]) ?? 20;
@@ -527,7 +695,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         }
       }
 
-      // 6. Solo Partite Gratuite
       if (_onlyFreeMatches && m.feePerPerson > 0) {
         return false;
       }
@@ -588,13 +755,12 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             ),
           ),
 
-          // BARRA ORIZZONTALE COMPATTA: [⭐ Favorite Sports, 1° Sport Preferito, 2°, 3°..., + More Sports]
+          // BARRA COMPATTA: [⭐ Favorite Sports, 1° Sport Preferito, 2°..., 📍 Area Map, + Other Sports]
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                // 1. Bottone "All My Favorites"
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
@@ -609,8 +775,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                     },
                   ),
                 ),
-
-                // 2. Singoli bottoni solo per i tuoi sport preferiti!
                 ...favSports.map((favSport) {
                   final bool isSelectedSingle = _sportFilterMode == 'CUSTOM' &&
                       _customSelectedSports.contains(favSport);
@@ -622,7 +786,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                       onSelected: (_) {
                         setState(() {
                           _sportFilterMode = 'CUSTOM';
-                          // Se clicchi sulla barra rapida puoi attivare/combinare i tuoi sport preferiti
                           if (_customSelectedSports.contains(favSport)) {
                             _customSelectedSports.remove(favSport);
                             if (_customSelectedSports.isEmpty) {
@@ -637,8 +800,25 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                     ),
                   );
                 }),
-
-                // 3. Chip rapido per cercare altri sport tramite il Pannello Filtri
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    avatar: const Icon(Icons.radar, size: 16),
+                    label: Text(
+                      _enableAreaFilter
+                          ? 'Within ${_maxRadiusKm.round()} km'
+                          : 'Nearby Radar',
+                    ),
+                    selected: _enableAreaFilter,
+                    onSelected: (val) {
+                      if (!val) {
+                        setState(() => _enableAreaFilter = false);
+                      } else {
+                        _openAdvancedFiltersSheet();
+                      }
+                    },
+                  ),
+                ),
                 ActionChip(
                   avatar: const Icon(Icons.add_circle_outline, size: 18),
                   label: Text(
@@ -652,9 +832,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             ),
           ),
 
-          // Riepilogo filtri attivi (Sport extra, Data, Ora, Gratis)
+          // Riepilogo filtri attivi
           if (_sportFilterMode == 'ALL' ||
               (_sportFilterMode == 'CUSTOM' && _customSelectedSports.isNotEmpty) ||
+              _enableAreaFilter ||
               _dateMode != 'UPCOMING' ||
               _timeMode != 'ANY' ||
               _onlyFreeMatches)
@@ -664,6 +845,12 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
+                  if (_enableAreaFilter)
+                    InputChip(
+                      avatar: const Icon(Icons.my_location, size: 15),
+                      label: Text('<= ${_maxRadiusKm.round()} km from ${UserSession.searchLocationLabel}'),
+                      onDeleted: () => setState(() => _enableAreaFilter = false),
+                    ),
                   if (_sportFilterMode == 'ALL')
                     InputChip(
                       label: const Text('Sports: All'),
@@ -752,19 +939,20 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('No matches match your current filters.'),
+                      const Text('No matches match your current filters or radius.'),
                       const SizedBox(height: 8),
                       FilledButton.tonal(
                         onPressed: () {
                           setState(() {
                             _sportFilterMode = 'ALL';
                             _customSelectedSports.clear();
+                            _enableAreaFilter = false;
                             _dateMode = 'UPCOMING';
                             _timeMode = 'ANY';
                             _onlyFreeMatches = false;
                           });
                         },
-                        child: const Text('Show All Upcoming Matches'),
+                        child: const Text('Reset Filters & Show All Matches'),
                       ),
                     ],
                   ),
@@ -774,6 +962,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                   itemCount: matches.length,
                   itemBuilder: (context, index) {
                     final match = matches[index];
+                    final distKm = match.distanceFromUserKm();
+                    final distLabel = distKm < 100
+                        ? '${distKm.toStringAsFixed(1)} km away'
+                        : '${distKm.round()} km away';
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
@@ -812,8 +1005,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                                         ),
                                         Text(
-                                          '${match.venue} • Host: ${match.organizerName ?? "Organizer"}',
-                                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                          '📍 ${match.venue} ($distLabel)',
+                                          style: TextStyle(color: Colors.grey[700], fontSize: 12),
                                         ),
                                       ],
                                     ),
@@ -869,4 +1062,68 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ),
     );
   }
+}
+
+// Disegna la Mappa Radar Interattiva con griglia stradale, pin dell'utente e cerchio del raggio in km
+class _RadarMapPainter extends CustomPainter {
+  final double pinX;
+  final double pinY;
+  final double radiusKm;
+  final bool isEnabled;
+
+  _RadarMapPainter({
+    required this.pinX,
+    required this.pinY,
+    required this.radiusKm,
+    required this.isEnabled,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = Colors.teal.withValues(alpha: 0.15)
+      ..strokeWidth = 1;
+
+    for (double x = 0; x < size.width; x += 28) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y < size.height; y += 28) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Fiume / Strade stilizzate per dare l'effetto mappa urbana
+    final roadPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.8)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(0, size.height * 0.65), Offset(size.width, size.height * 0.35), roadPaint);
+    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.7, size.height), roadPaint);
+
+    final center = Offset(pinX * size.width, pinY * size.height);
+    final visualRadius = (radiusKm / 50.0) * (size.height * 0.75) + 14;
+
+    if (isEnabled) {
+      final circleFill = Paint()
+        ..color = Colors.teal.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill;
+      final circleBorder = Paint()
+        ..color = Colors.teal[700]!
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke;
+      canvas.drawCircle(center, visualRadius, circleFill);
+      canvas.drawCircle(center, visualRadius, circleBorder);
+    }
+
+    // Pin centrale
+    final pinPaint = Paint()..color = Colors.red[700]!;
+    canvas.drawCircle(center, 7, pinPaint);
+    canvas.drawCircle(center, 3, Paint()..color = Colors.white);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarMapPainter oldDelegate) =>
+      oldDelegate.pinX != pinX ||
+          oldDelegate.pinY != pinY ||
+          oldDelegate.radiusKm != radiusKm ||
+          oldDelegate.isEnabled != isEnabled;
 }
