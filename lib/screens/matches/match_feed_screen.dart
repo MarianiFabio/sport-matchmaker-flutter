@@ -218,7 +218,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                             },
                           ),
                           ChoiceChip(
-                            label: const Text('🌍 All Sports'),
+                            label: const Text('All Sports'),
                             selected: _sportFilterMode == 'ALL',
                             onSelected: (_) {
                               setModalState(() {
@@ -755,7 +755,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             ),
           ),
 
-          // BARRA COMPATTA: [⭐ Favorite Sports, 1° Sport Preferito, 2°..., 📍 Area Map, + Other Sports]
+          // BARRA COMPATTA: [Favorite Sports, 1° Sport Preferito, 2°..., 📍 Area Map, + Other Sports]
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -764,7 +764,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: const Text('⭐ Favorite Sports'),
+                    label: const Text('Favorite Sports'),
                     selected: _sportFilterMode == 'FAV_ALL',
                     onSelected: (_) {
                       setState(() {
