@@ -8,13 +8,13 @@ class UserSession {
   static String surname = 'Mariani';
   static String email = 'fabio@email.com';
   static String username = 'fabio_m';
+  static String city = 'Kaunas'; // Città dell'utente per il filtro geografico
   static String abilityLevel = 'Advanced';
   static int karmaScore = 98;
   static List<String> favoriteSports = ['Football', 'Padel', 'Basketball'];
 
   static String get fullName => '$name $surname'.trim();
 
-  // URL dinamico per localhost (10.0.2.2 su Emulatore Android, localhost su Web/Desktop)
   static String get apiUrl {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2/sportmatch/api.php';
@@ -22,7 +22,6 @@ class UserSession {
     return 'http://localhost/sportmatch/api.php';
   }
 
-  // Aggiorna la sessione con il JSON restituito da login, register o get_profile
   static void updateFromJson(Map<String, dynamic> json) {
     if (json['id_user'] != null) {
       currentUserId = int.tryParse(json['id_user'].toString()) ?? currentUserId;
@@ -31,6 +30,9 @@ class UserSession {
     if (json['surname'] != null) surname = json['surname'].toString();
     if (json['email'] != null) email = json['email'].toString();
     if (json['username'] != null) username = json['username'].toString();
+    if (json['city'] != null && json['city'].toString().isNotEmpty) {
+      city = json['city'].toString();
+    }
     if (json['ability_level'] != null) abilityLevel = json['ability_level'].toString();
     if (json['karma_score'] != null) {
       karmaScore = int.tryParse(json['karma_score'].toString()) ?? karmaScore;

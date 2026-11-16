@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'matches/match_feed_screen.dart';
+import 'matches/clubs_screen.dart';
 import 'matches/my_matches_screen.dart';
 import 'matches/create_match_screen.dart';
 import 'profile/profile_screen.dart';
@@ -16,6 +17,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _pages = const [
     MatchFeedScreen(),
+    ClubsScreen(),
     MyMatchesScreen(),
     CreateMatchScreen(),
     ProfileScreen(),
@@ -36,6 +38,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             icon: Icon(Icons.sports_soccer),
             label: 'Feed',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            label: 'Clubs',
           ),
           NavigationDestination(
             icon: Icon(Icons.event_available_outlined),

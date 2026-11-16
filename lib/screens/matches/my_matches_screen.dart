@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/match_item.dart';
+import 'match_detail_screen.dart';
+
 class MyMatchesScreen extends StatefulWidget {
   const MyMatchesScreen({super.key});
 
@@ -16,18 +17,6 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // String get _apiUrl {
-  //   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-  //     return 'http://10.0.2.2/sportmatch/api.php';
-  //   }
-  //   return 'http://localhost/sportmatch/api.php';
-  // }
-
-  // String get _apiUrl {
-  //   // URL pubblico
-  //   return 'http://sportmatch-fabio.atwebpages.com/api.php';
-  // }
-
   String get _apiUrl => UserSession.apiUrl;
 
   @override
@@ -36,7 +25,6 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     _loadMyMatches();
   }
 
-  // Scarica le partite Joined e Organized dal JSON del server
   Future<void> _loadMyMatches() async {
     setState(() {
       _isLoading = true;
@@ -76,7 +64,6 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     }
   }
 
-  // Abbandona una partita a cui si era iscritti
   Future<void> _leaveMatch(int matchId) async {
     try {
       await http.post(
@@ -92,7 +79,6 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     }
   }
 
-  // Cancella una partita organizzata dall'utente
   Future<void> _deleteOrganizedMatch(int matchId) async {
     try {
       await http.post(
@@ -106,6 +92,18 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     } catch (e) {
       debugPrint('Error deleting match: $e');
     }
+  }
+
+  // Apre la schermata di dettaglio della partita cliccata
+  Future<void> _openMatchDetails(Map<String, dynamic> rawMatchJson) async {
+    final matchItem = MatchItem.fromJson(rawMatchJson);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MatchDetailScreen(match: matchItem),
+      ),
+    );
+    _loadMyMatches();
   }
 
   @override
@@ -153,7 +151,6 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
         )
             : TabBarView(
           children: [
-            // Tab 1: Partite a cui sono iscritto (lette dal DB)
             _joinedMatches.isEmpty
                 ? const Center(
               child: Text('You have not joined any matches yet.'),
@@ -181,12 +178,12 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   statusColor:
                   reqStatus == 'ACCEPTED' ? Colors.green : Colors.orange,
                   isHost: false,
+                  onCardTap: () => _openMatchDetails(m),
                   onActionPressed: () => _leaveMatch(idMatch),
                 );
               },
             ),
 
-            // Tab 2: Partite organizzate da me (lette dal DB)
             _organizedMatches.isEmpty
                 ? const Center(
               child: Text('You have not organized any matches yet.'),
@@ -214,6 +211,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   'Host • ${total - needed}/$total Players ($needed left)',
                   statusColor: Colors.teal,
                   isHost: true,
+                  onCardTap: () => _openMatchDetails(m),
                   onActionPressed: () => _deleteOrganizedMatch(idMatch),
                 );
               },
@@ -231,80 +229,90 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     required String location,
     required String status,
     required Color statusColor,
+    required VoidCallback onCardTap,
     required VoidCallback onActionPressed,
     bool isHost = false,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Chip(
-                  label: Text(sport),
-                  visualDensity: VisualDensity.compact,
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onCardTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Chip(
+                    label: Text(sport),
+                    visualDensity: VisualDensity.compact,
                   ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text(date, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Expanded(child: Text(location, style: const TextStyle(color: Colors.grey))),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (isHost)
-                  OutlinedButton.icon(
-                    onPressed: onActionPressed,
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                    label: const Text('Cancel Match', style: TextStyle(color: Colors.red)),
-                  )
-                else
-                  OutlinedButton.icon(
-                    onPressed: onActionPressed,
-                    icon: const Icon(Icons.exit_to_app, size: 18),
-                    label: const Text('Leave Match'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(date, style: const TextStyle(color: Colors.grey)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(location, style: const TextStyle(color: Colors.grey))),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: onCardTap,
+                    icon: const Icon(Icons.visibility_outlined, size: 18),
+                    label: const Text('View Roster & Chat'),
                   ),
-              ],
-            ),
-          ],
+                  if (isHost)
+                    OutlinedButton.icon(
+                      onPressed: onActionPressed,
+                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      label: const Text('Cancel Match', style: TextStyle(color: Colors.red)),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: onActionPressed,
+                      icon: const Icon(Icons.exit_to_app, size: 18),
+                      label: const Text('Leave Match'),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

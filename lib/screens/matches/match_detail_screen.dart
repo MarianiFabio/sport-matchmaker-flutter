@@ -78,6 +78,121 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     }
   }
 
+  // Apre la Chat di Evento dedicata ai partecipanti di questa singola partita
+  void _openMatchChatSheet() {
+    final msgCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: SizedBox(
+                height: 420,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Event Chat • ${widget.match.title}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: FutureBuilder<http.Response>(
+                        future: http.get(
+                          Uri.parse('${UserSession.apiUrl}?action=get_match_messages&id_match=${widget.match.id ?? 1}'),
+                        ),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          final List<dynamic> list = json.decode(snapshot.data!.body) as List<dynamic>;
+                          if (list.isEmpty) {
+                            return const Center(child: Text('No messages yet. Say hi to your teammates!'));
+                          }
+                          return ListView.builder(
+                            itemCount: list.length,
+                            itemBuilder: (context, i) {
+                              final m = list[i] as Map<String, dynamic>;
+                              return ListTile(
+                                dense: true,
+                                leading: const CircleAvatar(
+                                  radius: 14,
+                                  child: Icon(Icons.person, size: 16),
+                                ),
+                                title: Text(
+                                  '${m['sender_name']}  •  ${m['created_at']}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                                subtitle: Text((m['message_text'] ?? '').toString()),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: msgCtrl,
+                            decoration: const InputDecoration(
+                              hintText: 'Write to match roster...',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          icon: const Icon(Icons.send),
+                          onPressed: () async {
+                            final txt = msgCtrl.text.trim();
+                            if (txt.isEmpty) return;
+                            msgCtrl.clear();
+                            await http.post(
+                              Uri.parse('${UserSession.apiUrl}?action=send_match_message'),
+                              body: {
+                                'id_match': (widget.match.id ?? 1).toString(),
+                                'id_sender': UserSession.currentUserId.toString(),
+                                'sender_name': UserSession.fullName,
+                                'message_text': txt,
+                              },
+                            );
+                            setModalState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // Mostra un popup con tutte le informazioni sul giocatore cliccato nel Roster
   void _showPlayerProfileSheet(RosterPlayer player) {
     final initials = player.name.isNotEmpty
@@ -313,9 +428,21 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                       ? 'You are the Organizer (Host)'
                       : 'Already Joined (${UserSession.fullName})')
                       : 'Join This Game as ${UserSession.fullName}',
+
                   style: const TextStyle(fontSize: 16),
+
                 ),
                 onPressed: (_isJoining || _isAlreadyInRoster || _spotsNeeded <= 0) ? null : _joinMatch,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.forum_outlined),
+                label: const Text('Open Event Match Chat', style: TextStyle(fontSize: 16)),
+                onPressed: _openMatchChatSheet,
               ),
             ),
           ],
